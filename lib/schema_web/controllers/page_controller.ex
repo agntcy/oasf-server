@@ -134,6 +134,78 @@ defmodule SchemaWeb.PageController do
   end
 
   @doc """
+  Renders agent_model.
+  """
+  @spec agent_model(Plug.Conn.t(), map) :: Plug.Conn.t()
+  def agent_model(conn, params) do
+    render(conn, "agent_model.html",
+      extensions: Schema.extensions(),
+      profiles: SchemaController.get_profiles(params),
+      data: nil
+    )
+  end
+
+  @doc """
+  Renders locator.
+  """
+  @spec locator(Plug.Conn.t(), map) :: Plug.Conn.t()
+  def locator(conn, params) do
+    render(conn, "locator.html",
+      extensions: Schema.extensions(),
+      profiles: SchemaController.get_profiles(params),
+      data: nil
+    )
+  end
+
+  @doc """
+  Renders extension_base.
+  """
+  @spec extension_base(Plug.Conn.t(), map) :: Plug.Conn.t()
+  def extension_base(conn, params) do
+    render(conn, "extension_base.html",
+      extensions: Schema.extensions(),
+      profiles: SchemaController.get_profiles(params),
+      data: nil
+    )
+  end
+
+
+  @doc """
+  Renders main domains or the domains in a given main domain.
+  """
+  @spec main_domains(Plug.Conn.t(), map) :: Plug.Conn.t()
+  def main_domains(conn, %{"id" => id} = params) do
+    case SchemaController.main_domain_domains(params) do
+      nil ->
+        send_resp(conn, 404, "Not Found: #{id}")
+
+      data ->
+        domains = sort_by(data[:domains], :uid)
+
+        render(conn, "main_domain.html",
+          extensions: Schema.extensions(),
+          profiles: SchemaController.get_profiles(params),
+          data: Map.put(data, :domains, domains)
+        )
+    end
+  end
+
+  def main_domains(conn, params) do
+    data =
+      Map.put_new(params, "extensions", "")
+      |> SchemaController.main_domains()
+      |> sort_attributes(:uid)
+      |> sort_domains()
+
+    render(conn, "main_domains.html",
+      extensions: Schema.extensions(),
+      profiles: SchemaController.get_profiles(params),
+      data: data
+    )
+  end
+
+
+  @doc """
   Renders the attribute dictionary.
   """
   @spec dictionary(Plug.Conn.t(), any) :: Plug.Conn.t()
@@ -190,6 +262,50 @@ defmodule SchemaWeb.PageController do
     )
   end
 
+
+  @doc """
+  Redirects from the older /base_domain URL to /domains/base_domain.
+  """
+  @spec base_domain(Plug.Conn.t(), any) :: Plug.Conn.t()
+  def base_domain(conn, _params) do
+    redirect(conn, to: "/domains/base_domain")
+  end
+
+  @doc """
+  Renders domains.
+  """
+  @spec domains(Plug.Conn.t(), any) :: Plug.Conn.t()
+  def domains(conn, %{"id" => id} = params) do
+    extension = params["extension"]
+
+    case Schema.domain(extension, id) do
+      nil ->
+        send_resp(conn, 404, "Not Found: #{id}")
+
+      data ->
+        data =
+          data
+          |> sort_attributes()
+          |> Map.put(:key, Schema.Utils.to_uid(extension, id))
+
+        render(conn, "domain.html",
+          extensions: Schema.extensions(),
+          profiles: SchemaController.get_profiles(params),
+          data: data
+        )
+    end
+  end
+
+  def domains(conn, params) do
+    data = SchemaController.domains(params) |> sort_by(:uid)
+
+    render(conn, "domains.html",
+      extensions: Schema.extensions(),
+      profiles: SchemaController.get_profiles(params),
+      data: data
+    )
+  end
+
   @doc """
   Renders objects.
   """
@@ -227,6 +343,14 @@ defmodule SchemaWeb.PageController do
     Map.update!(categories, :attributes, fn list ->
       Enum.map(list, fn {name, category} ->
         {name, Map.update!(category, :classes, &sort_by(&1, :uid))}
+      end)
+    end)
+  end
+
+  defp sort_domains(main_domains) do
+    Map.update!(main_domains, :attributes, fn list ->
+      Enum.map(list, fn {name, main_domain} ->
+        {name, Map.update!(main_domain, :domains, &sort_by(&1, :uid))}
       end)
     end)
   end
