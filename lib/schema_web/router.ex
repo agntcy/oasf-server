@@ -68,8 +68,6 @@ defmodule SchemaWeb.Router do
     get "/data_types", PageController, :data_types
 
     get "/agent_model", PageController, :agent_model
-    get "/extension_base", PageController, :extension_base
-    get "/locator", PageController, :locator
   end
 
   # Other scopes may use custom stacks.
@@ -164,7 +162,7 @@ defmodule SchemaWeb.Router do
         title: "The OASF Schema API",
         description:
           "The Open Agents Schema Framework (OASF) server API allows to access the JSON" <>
-            " schema definitions and to validate and translate events.",
+            " schema definitions and to validate and translate objects.",
         license: %{
           name: "Apache 2.0",
           url: "http://www.apache.org/licenses/LICENSE-2.0.html"
