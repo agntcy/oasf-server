@@ -54,6 +54,30 @@ defmodule SchemaWeb.PageView do
     end
   end
 
+  def feature_graph_path(conn, data) do
+    feature_name = data[:name]
+
+    case data[:extension] do
+      nil ->
+        Routes.static_path(conn, "/feature/graph/" <> feature_name)
+
+      extension ->
+        Routes.static_path(conn, "/feature/graph/" <> extension <> "/" <> feature_name)
+    end
+  end
+
+  def feature_path(conn, data) do
+    feature_name = data[:name]
+
+    case data[:extension] do
+      nil ->
+        Routes.static_path(conn, "/features/" <> feature_name)
+
+      extension ->
+        Routes.static_path(conn, "/features/" <> extension <> "/" <> feature_name)
+    end
+  end
+
   def object_graph_path(conn, data) do
     object_name = data[:name]
 
@@ -108,6 +132,24 @@ defmodule SchemaWeb.PageView do
           Stream.filter(list, fn profile -> Map.has_key?(profiles, profile) end)
           |> Enum.map_join(", ", fn name ->
             profile_link(conn, get_in(profiles, [name, :caption]), name)
+          end),
+          "."
+        ]
+    end
+  end
+
+  def feature_profiles(conn, feature, profiles) do
+    case feature[:profiles] || [] do
+      [] ->
+        ""
+
+      list ->
+        [
+          "<h5 class='mt-3'>Profiles</h5>",
+          "Applicable profiles: ",
+          Stream.filter(list, fn profile -> Map.has_key?(profiles, profile) end)
+          |> Enum.map_join(", ", fn name ->
+                                    profile_link(conn, get_in(profiles, [name, :caption]), name)
           end),
           "."
         ]
@@ -293,6 +335,19 @@ defmodule SchemaWeb.PageView do
     end
   end
 
+  @spec format_feature_attribute_source(atom(), map()) :: String.t()
+  def format_feature_attribute_source(feature_key, field) do
+    all_features = Schema.all_features()
+    source = get_hierarchy_source(field)
+    {ok, path} = build_hierarchy(Schema.Utils.to_uid(feature_key), source, all_features)
+
+    if ok do
+      format_hierarchy(path, all_features, "feature")
+    else
+      to_string(source)
+    end
+  end
+
   @spec format_object_attribute_source(atom(), map()) :: String.t()
   def format_object_attribute_source(object_key, field) do
     all_objects = Schema.all_objects()
@@ -422,7 +477,7 @@ defmodule SchemaWeb.PageView do
   @spec field_classes(map) :: nonempty_binary
   def field_classes(field) do
     base =
-      if field[:_source] == :base_event or field[:_source] == :event do
+      if field[:_source] == :base_class or field[:_source] == :event do
         "base-event "
       else
         "event "
@@ -809,7 +864,7 @@ defmodule SchemaWeb.PageView do
         [
           [
             "<a href=\"",
-            SchemaWeb.Router.Helpers.static_path(conn, "/classes/base_event"),
+            SchemaWeb.Router.Helpers.static_path(conn, "/classes/base_class"),
             "\" data-toggle=\"tooltip\ title=\"Directly referenced\">Base Event Class</a>"
           ]
           | acc
@@ -957,8 +1012,8 @@ defmodule SchemaWeb.PageView do
                 | acc
               ]
 
-            source == :base_event ->
-              # Skip base_event source:
+            source == :base_class ->
+              # Skip base_class source:
               #   - Reduces noise
               #   - It is redundant with showing Base Event Class separately
               acc
@@ -1113,8 +1168,8 @@ defmodule SchemaWeb.PageView do
         [],
         fn link, acc ->
           type_path =
-            if link[:type] == "base_event" do
-              SchemaWeb.Router.Helpers.static_path(conn, "/classes/base_event")
+            if link[:type] == "base_class" do
+              SchemaWeb.Router.Helpers.static_path(conn, "/classes/base_class")
             else
               SchemaWeb.Router.Helpers.static_path(conn, "/classes/" <> link[:type])
             end
@@ -1304,7 +1359,7 @@ defmodule SchemaWeb.PageView do
         [
           [
             "<a href=\"",
-            SchemaWeb.Router.Helpers.static_path(conn, "/classes/base_event"),
+            SchemaWeb.Router.Helpers.static_path(conn, "/classes/base_class"),
             "\">Base Event Class</a>"
           ]
           | acc

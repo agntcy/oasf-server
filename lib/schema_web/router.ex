@@ -36,6 +36,11 @@ defmodule SchemaWeb.Router do
     get "/main_domains/:id", PageController, :main_domains
     get "/main_domains/:extension/:id", PageController, :main_domains
 
+    get "/main_features", PageController, :main_features
+
+    get "/main_features/:id", PageController, :main_features
+    get "/main_features/:extension/:id", PageController, :main_features
+
     get "/profiles", PageController, :profiles
     get "/profiles/:id", PageController, :profiles
     get "/profiles/:extension/:id", PageController, :profiles
@@ -54,8 +59,16 @@ defmodule SchemaWeb.Router do
     get "/domain/graph/:id", PageController, :domain_graph
     get "/domain/graph/:extension/:id", PageController, :domain_graph
 
-    get "/base_event", PageController, :base_event
+    get "/features", PageController, :features
+    get "/features/:id", PageController, :features
+    get "/features/:extension/:id", PageController, :features
+
+    get "/feature/graph/:id", PageController, :feature_graph
+    get "/feature/graph/:extension/:id", PageController, :feature_graph
+
+    get "/base_class", PageController, :base_class
     get "/base_domain", PageController, :base_domain
+    get "/base_feature", PageController, :base_feature
     get "/dictionary", PageController, :dictionary
 
     get "/objects", PageController, :objects
@@ -68,6 +81,11 @@ defmodule SchemaWeb.Router do
     get "/data_types", PageController, :data_types
 
     get "/agent_model", PageController, :agent_model
+
+    get "/skills", PageController, :categories
+
+    get "/skills/:id", PageController, :categories
+    get "/skills/:extension/:id", PageController, :categories
   end
 
   # Other scopes may use custom stacks.
@@ -88,6 +106,10 @@ defmodule SchemaWeb.Router do
     get "/main_domains/:id", SchemaController, :main_domain
     get "/main_domains/:extension/:id", SchemaController, :main_domain
 
+    get "/main_features", SchemaController, :main_features
+    get "/main_features/:id", SchemaController, :main_feature
+    get "/main_features/:extension/:id", SchemaController, :main_feature
+
     get "/profiles/:id", SchemaController, :profile
     get "/profiles/:extension/:id", SchemaController, :profile
 
@@ -99,8 +121,13 @@ defmodule SchemaWeb.Router do
     get "/domains/:id", SchemaController, :domain
     get "/domains/:extension/:id", SchemaController, :domain
 
-    get "/base_event", SchemaController, :base_event
+    get "/features", SchemaController, :features
+    get "/features/:id", SchemaController, :feature
+    get "/features/:extension/:id", SchemaController, :feature
+
+    get "/base_class", SchemaController, :base_class
     get "/base_domain", SchemaController, :base_domain
+    get "/base_feature", SchemaController, :base_feature
     get "/dictionary", SchemaController, :dictionary
 
     get "/objects", SchemaController, :objects
@@ -125,6 +152,9 @@ defmodule SchemaWeb.Router do
     get "/domains/:id", SchemaController, :json_class
     get "/domains/:extension/:id", SchemaController, :json_class
 
+    get "/features/:id", SchemaController, :json_class
+    get "/features/:extension/:id", SchemaController, :json_class
+
     get "/objects/:id", SchemaController, :json_object
     get "/objects/:extension/:id", SchemaController, :json_object
   end
@@ -132,7 +162,7 @@ defmodule SchemaWeb.Router do
   scope "/export", SchemaWeb do
     pipe_through :api
 
-    get "/base_event", SchemaController, :export_base_event
+    get "/base_class", SchemaController, :export_base_class
     get "/classes", SchemaController, :export_classes
     get "/objects", SchemaController, :export_objects
     get "/schema", SchemaController, :export_schema
@@ -141,7 +171,7 @@ defmodule SchemaWeb.Router do
   scope "/sample", SchemaWeb do
     pipe_through :api
 
-    get "/base_event", SchemaController, :sample_event
+    get "/base_class", SchemaController, :sample_event
 
     get "/objects/:id", SchemaController, :sample_object
     get "/objects/:extension/:id", SchemaController, :sample_object

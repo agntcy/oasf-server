@@ -91,8 +91,8 @@ limitations under the License.
         case '/classes':
           $('#classes_id').addClass("active");
           break;
-        case '/classes/base_event':
-          $('#base_event_id').addClass("active");
+        case '/classes/base_class':
+          $('#base_class_id').addClass("active");
           break;
         case '/dictionary':
           $('#dictionary_id').addClass("active");
@@ -181,18 +181,21 @@ limitations under the License.
   <div class="collapse navbar-collapse" id="navbarCollapse">
     <ul class="extensions navbar-nav ml-auto">
       <li id="categories_id" class="nav-item">
-        <a class="nav-link" href='<%= Routes.static_path(@conn, "/categories") %>'>Categories</a>
+        <a class="nav-link" href='<%= Routes.static_path(@conn, "/skills") %>'>Skills</a>
       </li>
       <li id="domains_id" class="nav-item">
         <a class="nav-link" href='<%= Routes.static_path(@conn, "/main_domains") %>'>Domains</a>
       </li>
-      <!--<li id="base_event_id" class="nav-item">
-        <a class="nav-link" href='<%= Routes.static_path(@conn, "/classes/base_event") %>'>Base Event</a>
+      <li id="features_id" class="nav-item">
+        <a class="nav-link" href='<%= Routes.static_path(@conn, "/main_features") %>'>Features</a>
+      </li>
+      <!--<li id="base_class_id" class="nav-item">
+        <a class="nav-link" href='<%= Routes.static_path(@conn, "/classes/base_class") %>'>Base Event</a>
       </li>
       <li id="classes_id" class="nav-item">
         <a class="nav-link" href='<%= Routes.static_path(@conn, "/classes") %>'>Classes</a>
-      </li>--> 
-      <li id="base_event_id" class="nav-item">
+      </li>-->
+      <li id="base_class_id" class="nav-item">
         <a class="nav-link" href='<%= Routes.static_path(@conn, "/agent_model") %>'>Data Model</a>
       </li>
       <li id="dictionary_id" class="nav-item">
