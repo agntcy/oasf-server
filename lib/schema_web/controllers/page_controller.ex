@@ -111,10 +111,15 @@ defmodule SchemaWeb.PageController do
       data ->
         classes = sort_by(data[:classes], :uid)
 
+        data =
+          Map.put(data, :classes, classes)
+          |> Map.put(:class_type, "class")
+          |> Map.put(:classes_path, "classes")
+
         render(conn, "category.html",
           extensions: Schema.extensions(),
           profiles: SchemaController.get_profiles(params),
-          data: Map.put(data, :classes, classes)
+          data: data
         )
     end
   end
@@ -125,6 +130,8 @@ defmodule SchemaWeb.PageController do
       |> SchemaController.categories()
       |> sort_attributes(:uid)
       |> sort_classes()
+      |> Map.put(:categories_path, "categories")
+      |> Map.put(:classes_path, "classes")
 
     render(conn, "index.html",
       extensions: Schema.extensions(),
@@ -150,10 +157,15 @@ defmodule SchemaWeb.PageController do
       data ->
         domains = sort_by(data[:classes], :uid)
 
-        render(conn, "main_domain.html",
+        data =
+          Map.put(data, :classes, domains)
+          |> Map.put(:class_type, "domain")
+          |> Map.put(:classes_path, "domains")
+
+        render(conn, "category.html",
           extensions: Schema.extensions(),
           profiles: SchemaController.get_profiles(params),
-          data: Map.put(data, :classes, domains)
+          data: data
         )
     end
   end
@@ -163,9 +175,11 @@ defmodule SchemaWeb.PageController do
       Map.put_new(params, "extensions", "")
       |> SchemaController.main_domains()
       |> sort_attributes(:uid)
-      |> sort_domains()
+      |> sort_classes()
+      |> Map.put(:categories_path, "main_domains")
+      |> Map.put(:classes_path, "domains")
 
-    render(conn, "main_domains.html",
+    render(conn, "index.html",
       extensions: Schema.extensions(),
       profiles: SchemaController.get_profiles(params),
       data: data
@@ -184,10 +198,15 @@ defmodule SchemaWeb.PageController do
       data ->
         features = sort_by(data[:classes], :uid)
 
-        render(conn, "main_feature.html",
+        data =
+          Map.put(data, :classes, features)
+          |> Map.put(:class_type, "feature")
+          |> Map.put(:classes_path, "features")
+
+        render(conn, "category.html",
           extensions: Schema.extensions(),
           profiles: SchemaController.get_profiles(params),
-          data: Map.put(data, :classes, features)
+          data: data
         )
     end
   end
@@ -197,9 +216,11 @@ defmodule SchemaWeb.PageController do
       Map.put_new(params, "extensions", "")
       |> SchemaController.main_features()
       |> sort_attributes(:uid)
-      |> sort_features()
+      |> sort_classes()
+      |> Map.put(:categories_path, "main_features")
+      |> Map.put(:classes_path, "features")
 
-    render(conn, "main_features.html",
+    render(conn, "index.html",
       extensions: Schema.extensions(),
       profiles: SchemaController.get_profiles(params),
       data: data
@@ -244,6 +265,7 @@ defmodule SchemaWeb.PageController do
           data
           |> sort_attributes()
           |> Map.put(:key, Schema.Utils.to_uid(extension, id))
+          |> Map.put(:class_type, "class")
 
         render(conn, "class.html",
           extensions: Schema.extensions(),
@@ -254,7 +276,14 @@ defmodule SchemaWeb.PageController do
   end
 
   def classes(conn, params) do
-    data = SchemaController.classes(params) |> sort_by(:uid)
+    data = %{
+      classes:
+        SchemaController.classes(params)
+        |> sort_by(:uid),
+      title: "Classes",
+      description: "The OASF classes",
+      classes_path: "classes"
+    }
 
     render(conn, "classes.html",
       extensions: Schema.extensions(),
@@ -279,8 +308,9 @@ defmodule SchemaWeb.PageController do
           data
           |> sort_attributes()
           |> Map.put(:key, Schema.Utils.to_uid(extension, id))
+          |> Map.put(:class_type, "domain")
 
-        render(conn, "domain.html",
+        render(conn, "class.html",
           extensions: Schema.extensions(),
           profiles: SchemaController.get_profiles(params),
           data: data
@@ -289,9 +319,16 @@ defmodule SchemaWeb.PageController do
   end
 
   def domains(conn, params) do
-    data = SchemaController.domains(params) |> sort_by(:uid)
+    data = %{
+      classes:
+        SchemaController.domains(params)
+        |> sort_by(:uid),
+      title: "Domains",
+      description: "The OASF domains",
+      classes_path: "domains"
+    }
 
-    render(conn, "domains.html",
+    render(conn, "classes.html",
       extensions: Schema.extensions(),
       profiles: SchemaController.get_profiles(params),
       data: data
@@ -314,8 +351,9 @@ defmodule SchemaWeb.PageController do
           data
           |> sort_attributes()
           |> Map.put(:key, Schema.Utils.to_uid(extension, id))
+          |> Map.put(:class_type, "feature")
 
-        render(conn, "feature.html",
+        render(conn, "class.html",
           extensions: Schema.extensions(),
           profiles: SchemaController.get_profiles(params),
           data: data
@@ -324,9 +362,16 @@ defmodule SchemaWeb.PageController do
   end
 
   def features(conn, params) do
-    data = SchemaController.features(params) |> sort_by(:uid)
+    data = %{
+      classes:
+        SchemaController.features(params)
+        |> sort_by(:uid),
+      title: "Features",
+      description: "The OASF features",
+      classes_path: "features"
+    }
 
-    render(conn, "features.html",
+    render(conn, "classes.html",
       extensions: Schema.extensions(),
       profiles: SchemaController.get_profiles(params),
       data: data
@@ -370,22 +415,6 @@ defmodule SchemaWeb.PageController do
     Map.update!(categories, :attributes, fn list ->
       Enum.map(list, fn {name, category} ->
         {name, Map.update!(category, :classes, &sort_by(&1, :uid))}
-      end)
-    end)
-  end
-
-  defp sort_domains(main_domains) do
-    Map.update!(main_domains, :attributes, fn list ->
-      Enum.map(list, fn {name, main_domain} ->
-        {name, Map.update!(main_domain, :classes, &sort_by(&1, :uid))}
-      end)
-    end)
-  end
-
-  defp sort_features(main_features) do
-    Map.update!(main_features, :attributes, fn list ->
-      Enum.map(list, fn {name, main_feature} ->
-        {name, Map.update!(main_feature, :classes, &sort_by(&1, :uid))}
       end)
     end)
   end
