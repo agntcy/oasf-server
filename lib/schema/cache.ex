@@ -24,33 +24,32 @@ defmodule Schema.Cache do
     :profiles,
     :dictionary,
     :base_class,
+    :classes,
+    :all_classes,
+    :categories,
     :objects,
     :all_objects,
     # domain libs
     :domains,
     :all_domains,
     :main_domains,
-    # category libs
-    :classes,
-    :all_classes,
-    :categories,
+    # skill libs
+    :skills,
+    :all_skills,
+    :main_skills,
     # feature libs
     :features,
     :all_features,
     :main_features
   ]
   defstruct ~w[
-    version profiles dictionary base_class categories main_domains classes domains all_classes all_domains objects all_objects features all_features main_features
+    version profiles dictionary base_class classes all_classes categories objects all_objects skills all_skills main_skills domains all_domains main_domains features all_features main_features
   ]a
 
   @type t() :: %__MODULE__{}
   @type class_t() :: map()
-  @type domain_t() :: map()
-  @type feature_t() :: map()
   @type object_t() :: map()
   @type category_t() :: map()
-  @type main_feature_t() :: map()
-  @type main_domain_t() :: map()
   @type dictionary_t() :: map()
 
   @main_skills_file "main_skills.json"
@@ -70,7 +69,7 @@ defmodule Schema.Cache do
     dictionary = JsonReader.read_dictionary() |> update_dictionary()
     base_class = JsonReader.read_base_class()
 
-    {classes, all_classes, observable_type_id_map, categories} =
+    {skills, all_skills, observable_type_id_map, main_skills} =
       read_classes(base_class, @main_skills_file, @skills_dir)
 
     {domains, all_domains, _observable_domains_type_id_map, main_domains} =
@@ -78,6 +77,19 @@ defmodule Schema.Cache do
 
     {features, all_features, _observable_features_type_id_map, main_features} =
       read_classes(base_class, @main_features_file, @features_dir)
+
+    # Merge skills, domains and features classes and categories
+    classes = Utils.merge_classes([skills, domains, features])
+    all_classes = Utils.merge_classes([all_skills, all_domains, all_features])
+
+    categories_attributes =
+      Utils.merge_categories([
+        main_skills[:attributes],
+        main_domains[:attributes],
+        main_features[:attributes]
+      ])
+
+    categories = %{attributes: categories_attributes}
 
     {objects, all_objects, observable_type_id_map} = read_objects(observable_type_id_map)
 
@@ -110,6 +122,10 @@ defmodule Schema.Cache do
       update_classes(classes, objects)
       |> final_check(dictionary_attributes)
 
+    skills =
+      update_classes(skills, objects)
+      |> final_check(dictionary_attributes)
+
     domains =
       update_classes(domains, objects)
       |> final_check(dictionary_attributes)
@@ -124,6 +140,7 @@ defmodule Schema.Cache do
     {profiles, no_req_set} = fix_entities(profiles, no_req_set, "profile")
     {base_class, no_req_set} = fix_entity(base_class, no_req_set, :base_class, "class")
     {classes, no_req_set} = fix_entities(classes, no_req_set, "class")
+    {skills, no_req_set} = fix_entities(skills, no_req_set, "skill")
     {domains, no_req_set} = fix_entities(domains, no_req_set, "domain")
     {features, no_req_set} = fix_entities(features, no_req_set, "feature")
     {objects, no_req_set} = fix_entities(objects, no_req_set, "object")
@@ -142,17 +159,20 @@ defmodule Schema.Cache do
       profiles: profiles,
       dictionary: dictionary,
       base_class: base_class,
-      objects: objects,
-      all_objects: all_objects,
-      # categories libs
       classes: classes,
       all_classes: all_classes,
       categories: categories,
-      # domains libs
+      objects: objects,
+      all_objects: all_objects,
+      # skill libs
+      skills: skills,
+      all_skills: all_skills,
+      main_skills: main_skills,
+      # domain libs
       domains: domains,
       all_domains: all_domains,
       main_domains: main_domains,
-      # features libs
+      # feature libs
       features: features,
       all_features: all_features,
       main_features: main_features
@@ -191,10 +211,18 @@ defmodule Schema.Cache do
     Map.get(categories[:attributes], id)
   end
 
+  @spec main_skills(__MODULE__.t()) :: map()
+  def main_skills(%__MODULE__{main_skills: main_skills}), do: main_skills
+
+  @spec main_skill(__MODULE__.t(), any) :: nil | category_t()
+  def main_skill(%__MODULE__{main_skills: main_skills}, id) do
+    Map.get(main_skills[:attributes], id)
+  end
+
   @spec main_domains(__MODULE__.t()) :: map()
   def main_domains(%__MODULE__{main_domains: main_domains}), do: main_domains
 
-  @spec main_domain(__MODULE__.t(), any) :: nil | main_domain_t()
+  @spec main_domain(__MODULE__.t(), any) :: nil | category_t()
   def main_domain(%__MODULE__{main_domains: main_domains}, id) do
     Map.get(main_domains[:attributes], id)
   end
@@ -202,7 +230,7 @@ defmodule Schema.Cache do
   @spec main_features(__MODULE__.t()) :: map()
   def main_features(%__MODULE__{main_features: main_features}), do: main_features
 
-  @spec main_feature(__MODULE__.t(), any) :: nil | main_feature_t()
+  @spec main_feature(__MODULE__.t(), any) :: nil | category_t()
   def main_feature(%__MODULE__{main_features: main_features}, id) do
     Map.get(main_features[:attributes], id)
   end
@@ -275,6 +303,66 @@ defmodule Schema.Cache do
     end
   end
 
+  @spec skills(__MODULE__.t()) :: map()
+  def skills(%__MODULE__{skills: skills}), do: skills
+
+  @spec all_skills(__MODULE__.t()) :: map()
+  def all_skills(%__MODULE__{all_skills: all_skills}), do: all_skills
+
+  @spec export_skills(__MODULE__.t()) :: map()
+  def export_skills(%__MODULE__{skills: skills, dictionary: dictionary}) do
+    Enum.into(skills, Map.new(), fn {name, skill} ->
+      {name, enrich(skill, dictionary[:attributes])}
+    end)
+  end
+
+  @spec skill(__MODULE__.t(), atom()) :: nil | class_t()
+  def skill(%__MODULE__{dictionary: dictionary, base_class: base_class}, :base_class) do
+    enrich(base_class, dictionary[:attributes])
+  end
+
+  def skill(%__MODULE__{dictionary: dictionary, skills: skills}, id) do
+    case Map.get(skills, id) do
+      nil ->
+        nil
+
+      skill ->
+        enrich(skill, dictionary[:attributes])
+    end
+  end
+
+  @doc """
+  Returns extended skill definition, which includes all objects referred by the skill.
+  """
+  @spec skill_ex(__MODULE__.t(), atom()) :: nil | class_t()
+  def skill_ex(
+        %__MODULE__{dictionary: dictionary, objects: objects, base_class: base_class},
+        :base_class
+      ) do
+    skill_ex(base_class, dictionary, objects)
+  end
+
+  def skill_ex(%__MODULE__{dictionary: dictionary, skills: skills, objects: objects}, id) do
+    Map.get(skills, id) |> skill_ex(dictionary, objects)
+  end
+
+  defp skill_ex(nil, _dictionary, _objects) do
+    nil
+  end
+
+  defp skill_ex(skill, dictionary, objects) do
+    {skill_ex, ref_objects} = enrich_ex(skill, dictionary[:attributes], objects, Map.new())
+    Map.put(skill_ex, :objects, Map.to_list(ref_objects))
+  end
+
+  @spec find_skill(Schema.Cache.t(), any) :: nil | map
+  def find_skill(%__MODULE__{dictionary: dictionary, skills: skills}, uid) do
+    case Enum.find(skills, fn {_, skill} -> skill[:uid] == uid end) do
+      {_, skill} -> enrich(skill, dictionary[:attributes])
+      nil -> nil
+    end
+  end
+
   @spec domains(__MODULE__.t()) :: map()
   def domains(%__MODULE__{domains: domains}), do: domains
 
@@ -288,7 +376,7 @@ defmodule Schema.Cache do
     end)
   end
 
-  @spec domain(__MODULE__.t(), atom()) :: nil | domain_t()
+  @spec domain(__MODULE__.t(), atom()) :: nil | class_t()
   def domain(%__MODULE__{dictionary: dictionary, base_class: base_class}, :base_class) do
     enrich(base_class, dictionary[:attributes])
   end
@@ -306,7 +394,7 @@ defmodule Schema.Cache do
   @doc """
   Returns extended domain definition, which includes all objects referred by the domain.
   """
-  @spec domain_ex(__MODULE__.t(), atom()) :: nil | domain_t()
+  @spec domain_ex(__MODULE__.t(), atom()) :: nil | class_t()
   def domain_ex(
         %__MODULE__{dictionary: dictionary, objects: objects, base_class: base_class},
         :base_class
@@ -348,7 +436,7 @@ defmodule Schema.Cache do
     end)
   end
 
-  @spec feature(__MODULE__.t(), atom()) :: nil | feature_t()
+  @spec feature(__MODULE__.t(), atom()) :: nil | class_t()
   def feature(%__MODULE__{dictionary: dictionary, base_class: base_class}, :base_class) do
     enrich(base_class, dictionary[:attributes])
   end
@@ -366,7 +454,7 @@ defmodule Schema.Cache do
   @doc """
   Returns extended feature definition, which includes all objects referred by the feature.
   """
-  @spec feature_ex(__MODULE__.t(), atom()) :: nil | feature_t()
+  @spec feature_ex(__MODULE__.t(), atom()) :: nil | class_t()
   def feature_ex(
         %__MODULE__{dictionary: dictionary, objects: objects, base_class: base_class},
         :base_class
