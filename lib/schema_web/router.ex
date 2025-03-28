@@ -191,11 +191,11 @@ defmodule SchemaWeb.Router do
     get "/features/:extension/:id", SchemaController, :sample_class
   end
 
-  # scope "/doc" do
-  #  forward "/", PhoenixSwagger.Plug.SwaggerUI,
-  #    otp_app: :schema_server,
-  #    swagger_file: "swagger.json"
-  # end
+  scope "/doc" do
+    forward "/", PhoenixSwagger.Plug.SwaggerUI,
+      otp_app: :schema_server,
+      swagger_file: "swagger.json"
+  end
 
   def swagger_info do
     %{
@@ -208,7 +208,7 @@ defmodule SchemaWeb.Router do
           name: "Apache 2.0",
           url: "http://www.apache.org/licenses/LICENSE-2.0.html"
         },
-        version: "1.0.0"
+        version: "0.1.0"
       }
     }
   end
