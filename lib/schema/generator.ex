@@ -142,7 +142,9 @@ defmodule Schema.Generator do
   end
 
   defp generate_sample_class(class) do
-    data = generate_sample(class)
+    data =
+      generate_sample(class)
+      |> generate_class_name(class)
 
     case data[:activity_id] do
       nil ->
@@ -160,6 +162,16 @@ defmodule Schema.Generator do
         |> put_type_name(uid, class)
         |> Map.delete(:raw_data)
         |> Map.delete(:unmapped)
+    end
+  end
+
+  defp generate_class_name(data, class) do
+    if data[:name] == nil do
+      data
+    else
+      Map.update!(data, :name, fn _name ->
+        Types.class_name(class[:family], class[:category], class[:name])
+      end)
     end
   end
 
@@ -198,34 +210,6 @@ defmodule Schema.Generator do
       |> Enum.reduce(uid, fn {_, file}, next -> update_classes(file, next) end)
     else
       update_class_uid(path, uid)
-    end
-  end
-
-  @doc """
-  Generate new domain uid values for a given main domain.
-  """
-  @spec update_domains(binary(), integer()) :: any()
-  def update_domains(path, uid) when is_binary(path) and is_integer(uid) do
-    if File.dir?(path) do
-      read_domains(nil, path, [])
-      |> Enum.sort()
-      |> Enum.reduce(uid, fn {_, file}, next -> update_domains(file, next) end)
-    else
-      update_domain_uid(path, uid)
-    end
-  end
-
-  @doc """
-  Generate new feature uid values for a given main feature.
-  """
-  @spec update_features(binary(), integer()) :: any()
-  def update_features(path, uid) when is_binary(path) and is_integer(uid) do
-    if File.dir?(path) do
-      read_features(nil, path, [])
-      |> Enum.sort()
-      |> Enum.reduce(uid, fn {_, file}, next -> update_features(file, next) end)
-    else
-      update_feature_uid(path, uid)
     end
   end
 
@@ -460,10 +444,11 @@ defmodule Schema.Generator do
   defp generate_data(:ref_time, _type, _field),
     do: DateTime.utc_now() |> DateTime.to_iso8601()
 
-  defp generate_data(:version, _type, _field), do: Schema.version()
+  defp generate_data(:version, _type, _field), do: "v" <> Schema.version()
   defp generate_data(:lang, _type, _field), do: "en"
   defp generate_data(:uuid, _type, _field), do: uuid()
   defp generate_data(:uid, _type, _field), do: uuid()
+  defp generate_data(:authors, _type, _field), do: full_name(2)
   defp generate_data(:creator, _type, _field), do: full_name(2)
   defp generate_data(:accessor, _type, _field), do: full_name(2)
   defp generate_data(:modifier, _type, _field), do: full_name(2)
@@ -824,88 +809,6 @@ defmodule Schema.Generator do
   end
 
   defp update_class_uid(file, uid) do
-    data = File.read!(file) |> Jason.decode!()
-
-    case Map.get(data, "uid") do
-      nil ->
-        uid
-
-      _uid ->
-        Map.put(data, "uid", uid) |> write_json(file)
-        uid + 1
-    end
-  end
-
-  def read_domains(path) do
-    if File.dir?(path) do
-      read_domains(nil, path, []) |> Enum.sort()
-    else
-      []
-    end
-  end
-
-  defp read_domains(name, path, list) do
-    if File.dir?(path) do
-      case File.ls(path) do
-        {:ok, files} ->
-          Enum.reduce(files, list, fn file, acc ->
-            read_domains(file, Path.join(path, file), acc)
-          end)
-
-        error ->
-          exit(error)
-      end
-    else
-      if Path.extname(name) == ".json" do
-        [{name, path} | list]
-      else
-        list
-      end
-    end
-  end
-
-  defp update_domain_uid(file, uid) do
-    data = File.read!(file) |> Jason.decode!()
-
-    case Map.get(data, "uid") do
-      nil ->
-        uid
-
-      _uid ->
-        Map.put(data, "uid", uid) |> write_json(file)
-        uid + 1
-    end
-  end
-
-  def read_features(path) do
-    if File.dir?(path) do
-      read_features(nil, path, []) |> Enum.sort()
-    else
-      []
-    end
-  end
-
-  defp read_features(name, path, list) do
-    if File.dir?(path) do
-      case File.ls(path) do
-        {:ok, files} ->
-          Enum.reduce(files, list, fn file, acc ->
-            read_features(file, Path.join(path, file), acc)
-          end)
-
-        error ->
-          exit(error)
-      end
-    else
-      if Path.extname(name) == ".json" do
-        [{name, path} | list]
-      else
-        list
-      end
-    end
-  end
-
-  defp update_feature_uid(file, uid) do
     data = File.read!(file) |> Jason.decode!()
 
     case Map.get(data, "uid") do
