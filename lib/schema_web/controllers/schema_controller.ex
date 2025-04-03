@@ -19,7 +19,7 @@ defmodule SchemaWeb.SchemaController do
   @observables "_observables"
 
   @extensions_param_description "When included in request, filters response to included only the" <>
-                                  " supplied extensions, or no extensions if this parameter has" <>
+                                  " supplied schema extensions, or no extensions if this parameter has" <>
                                   " no value. When not included, all extensions are returned in" <>
                                   " the response."
 
@@ -90,114 +90,15 @@ defmodule SchemaWeb.SchemaController do
 
           example([
             %{
-              caption: "DHCP Activity",
-              category: "network",
-              category_name: "Network Activity",
-              description: "DHCP Activity classes report MAC to IP assignment via DHCP.",
-              name: "dhcp_activity",
-              profiles: [
-                "cloud",
-                "datetime",
-                "host",
-                "file_security"
-              ],
-              uid: 4004
-            }
-          ])
-        end,
-      SkillDesc:
-        swagger_schema do
-          title("Skill Descriptor")
-          description("Schema skill descriptor.")
-
-          properties do
-            name(:string, "skill name", required: true)
-            caption(:string, "skill caption", required: true)
-            description(:string, "skill description", required: true)
-            main_skill(:string, "skill's main skill", required: true)
-            main_skill_name(:string, "omain's main skill's caption", required: true)
-            profiles(:array, "skill profiles", items: %PhoenixSwagger.Schema{type: :string})
-            uid(:integer, "skill unique identifier", required: true)
-          end
-
-          example([
-            %{
-              caption: "DHCP Activity",
-              main_skill: "network",
-              main_skill_name: "Network Activity",
-              description: "DHCP Activity classes report MAC to IP assignment via DHCP.",
-              name: "dhcp_activity",
-              profiles: [
-                "cloud",
-                "datetime",
-                "host",
-                "file_security"
-              ],
-              uid: 4004
-            }
-          ])
-        end,
-      DomainDesc:
-        swagger_schema do
-          title("Domain Descriptor")
-          description("Schema domain descriptor.")
-
-          properties do
-            name(:string, "Domain name", required: true)
-            caption(:string, "Domain caption", required: true)
-            description(:string, "Domain description", required: true)
-            main_domain(:string, "Domain's main domain", required: true)
-            main_domain_name(:string, "omain's main domain's caption", required: true)
-            profiles(:array, "Domain profiles", items: %PhoenixSwagger.Schema{type: :string})
-            uid(:integer, "Domain unique identifier", required: true)
-          end
-
-          example([
-            %{
-              caption: "DHCP Activity",
-              main_domain: "network",
-              main_domain_name: "Network Activity",
-              description: "DHCP Activity classes report MAC to IP assignment via DHCP.",
-              name: "dhcp_activity",
-              profiles: [
-                "cloud",
-                "datetime",
-                "host",
-                "file_security"
-              ],
-              uid: 4004
-            }
-          ])
-        end,
-      FeatureDesc:
-        swagger_schema do
-          title("Feature Descriptor")
-          description("Schema feature descriptor.")
-
-          properties do
-            name(:string, "Feature name", required: true)
-            caption(:string, "Feature caption", required: true)
-            description(:string, "Feature description", required: true)
-            main_feature(:string, "Feature's main feature", required: true)
-            main_feature_name(:string, "Feature's main feature's caption", required: true)
-            profiles(:array, "Feature profiles", items: %PhoenixSwagger.Schema{type: :string})
-            uid(:integer, "Feature unique identifier", required: true)
-          end
-
-          example([
-            %{
-              caption: "DHCP Activity",
-              main_feature: "network",
-              main_feature_name: "Network Activity",
-              description: "DHCP Activity classes report MAC to IP assignment via DHCP.",
-              name: "dhcp_activity",
-              profiles: [
-                "cloud",
-                "datetime",
-                "host",
-                "file_security"
-              ],
-              uid: 4004
+              name: "problem_solving",
+              description:
+                "Assisting with solving problems by generating potential solutions or strategies.",
+              category: "nlp",
+              extends: "analytical_reasoning",
+              uid: 10702,
+              caption: "Problem Solving",
+              category_name: "Natural Language Processing",
+              category_uid: 1
             }
           ])
         end,
@@ -435,7 +336,7 @@ defmodule SchemaWeb.SchemaController do
   """
   swagger_path :extensions do
     get("/api/extensions")
-    summary("List extensions")
+    summary("List schema extensions")
     description("Get OASF schema extensions.")
     produces("application/json")
     tag("Schema")
@@ -494,7 +395,7 @@ defmodule SchemaWeb.SchemaController do
     summary("Profile")
 
     description(
-      "Get OASF schema profile by name. The profile name may contain an extension name." <>
+      "Get OASF schema profile by name. The profile name may contain a schema extension name." <>
         " For example, \"linux/linux_users\"."
     )
 
@@ -533,13 +434,13 @@ defmodule SchemaWeb.SchemaController do
   """
   swagger_path :categories do
     get("/api/categories")
-    summary("List categories")
-    description("Get OASF schema categories.")
+    summary("List all categories")
+    description("Get all OASF schema categories (skills, domains, features).")
     produces("application/json")
-    tag("Categories and Classes")
+    tag("All Categories and Classes")
 
     parameters do
-      extensions(:query, :array, "Related extensions to include in response.",
+      extensions(:query, :array, "Related schema extensions to include in response.",
         items: [type: :string]
       )
     end
@@ -565,20 +466,20 @@ defmodule SchemaWeb.SchemaController do
   """
   swagger_path :category do
     get("/api/categories/{name}")
-    summary("List category classes")
+    summary("List all category classes (skills, domains, features)")
 
     description(
-      "Get OASF schema classes defined in the named category. The category name may contain an" <>
-        " extension name. For example, \"dev/policy\"."
+      "Get OASF schema classes defined in the named category. The category name may contain a" <>
+        " schema extension name. For example, \"dev/policy\"."
     )
 
     produces("application/json")
-    tag("Categories and Classes")
+    tag("All Categories and Classes")
 
     parameters do
       name(:path, :string, "Category name", required: true)
 
-      extensions(:query, :array, "Related extensions to include in response.",
+      extensions(:query, :array, "Related schema extensions to include in response.",
         items: [type: :string]
       )
     end
@@ -612,13 +513,13 @@ defmodule SchemaWeb.SchemaController do
   """
   swagger_path :main_skills do
     get("/api/main_skills")
-    summary("List main skills")
-    description("Get OASF schema main skills.")
+    summary("List skill categories")
+    description("Get all OASF skill classes by category.")
     produces("application/json")
     tag("Skills")
 
     parameters do
-      extensions(:query, :array, "Related extensions to include in response.",
+      extensions(:query, :array, "Related schema extensions to include in response.",
         items: [type: :string]
       )
     end
@@ -644,33 +545,33 @@ defmodule SchemaWeb.SchemaController do
   """
   swagger_path :main_skill do
     get("/api/main_skills/{name}")
-    summary("List sub skills of main skill")
+    summary("List skills of a skill category")
 
     description(
-      "Get OASF schema skills defined in the named main skill. The main skill name may contain an" <>
-        " extension name. For example, \"dev/policy\"."
+      "Get OASF skills defined in the named skill category. The skill category name may contain a" <>
+        " schema extension name. For example, \"dev/policy\"."
     )
 
     produces("application/json")
     tag("Skills")
 
     parameters do
-      name(:path, :string, "Main skill name", required: true)
+      name(:path, :string, "Skill category name", required: true)
 
-      extensions(:query, :array, "Related extensions to include in response.",
+      extensions(:query, :array, "Related schema extensions to include in response.",
         items: [type: :string]
       )
     end
 
     response(200, "Success")
-    response(404, "Main skill <code>name</code> not found")
+    response(404, "Skill category <code>name</code> not found")
   end
 
   @spec main_skill(Plug.Conn.t(), map) :: Plug.Conn.t()
   def main_skill(conn, %{"id" => id} = params) do
     case main_skill_skills(params) do
       nil ->
-        send_json_resp(conn, 404, %{error: "Main skill #{id} not found"})
+        send_json_resp(conn, 404, %{error: "Skill category #{id} not found"})
 
       data ->
         send_json_resp(conn, data)
@@ -691,13 +592,13 @@ defmodule SchemaWeb.SchemaController do
   """
   swagger_path :main_domains do
     get("/api/main_domains")
-    summary("List main domains")
-    description("Get OASF schema main domains.")
+    summary("List domain categories")
+    description("Get all OASF domain classes by category.")
     produces("application/json")
     tag("Domains")
 
     parameters do
-      extensions(:query, :array, "Related extensions to include in response.",
+      extensions(:query, :array, "Related schema extensions to include in response.",
         items: [type: :string]
       )
     end
@@ -723,33 +624,33 @@ defmodule SchemaWeb.SchemaController do
   """
   swagger_path :main_domain do
     get("/api/main_domains/{name}")
-    summary("List sub domains of main domain")
+    summary("List domains of a domain category")
 
     description(
-      "Get OASF schema domains defined in the named main domain. The main domain name may contain an" <>
-        " extension name. For example, \"dev/policy\"."
+      "Get OASF domains defined in the named domain category. The domain category name may contain a" <>
+        " schema extension name. For example, \"dev/policy\"."
     )
 
     produces("application/json")
     tag("Domains")
 
     parameters do
-      name(:path, :string, "Main domain name", required: true)
+      name(:path, :string, "Domain category name", required: true)
 
-      extensions(:query, :array, "Related extensions to include in response.",
+      extensions(:query, :array, "Related schema extensions to include in response.",
         items: [type: :string]
       )
     end
 
     response(200, "Success")
-    response(404, "Main domain <code>name</code> not found")
+    response(404, "Domain category <code>name</code> not found")
   end
 
   @spec main_domain(Plug.Conn.t(), map) :: Plug.Conn.t()
   def main_domain(conn, %{"id" => id} = params) do
     case main_domain_domains(params) do
       nil ->
-        send_json_resp(conn, 404, %{error: "Main domain #{id} not found"})
+        send_json_resp(conn, 404, %{error: "Domain category #{id} not found"})
 
       data ->
         send_json_resp(conn, data)
@@ -770,13 +671,13 @@ defmodule SchemaWeb.SchemaController do
   """
   swagger_path :main_features do
     get("/api/main_features")
-    summary("List main features")
-    description("Get OASF schema main features.")
+    summary("List feature categories")
+    description("Get all OASF feature classes by category.")
     produces("application/json")
     tag("Features")
 
     parameters do
-      extensions(:query, :array, "Related extensions to include in response.",
+      extensions(:query, :array, "Related schema extensions to include in response.",
         items: [type: :string]
       )
     end
@@ -802,33 +703,33 @@ defmodule SchemaWeb.SchemaController do
   """
   swagger_path :main_feature do
     get("/api/main_features/{name}")
-    summary("List sub features of main feature")
+    summary("List features of a feature category")
 
     description(
-      "Get OASF schema features defined in the named main feature. The main feature name may contain an" <>
-        " extension name. For example, \"dev/policy\"."
+      "Get OASF features defined in the named feature category. The feature category name may contain a" <>
+        " schema extension name. For example, \"dev/policy\"."
     )
 
     produces("application/json")
     tag("Features")
 
     parameters do
-      name(:path, :string, "Main feature name", required: true)
+      name(:path, :string, "Feature category name", required: true)
 
-      extensions(:query, :array, "Related extensions to include in response.",
+      extensions(:query, :array, "Related schema extensions to include in response.",
         items: [type: :string]
       )
     end
 
     response(200, "Success")
-    response(404, "Main feature <code>name</code> not found")
+    response(404, "Feature category <code>name</code> not found")
   end
 
   @spec main_feature(Plug.Conn.t(), map) :: Plug.Conn.t()
   def main_feature(conn, %{"id" => id} = params) do
     case main_feature_features(params) do
       nil ->
-        send_json_resp(conn, 404, %{error: "Main feature #{id} not found"})
+        send_json_resp(conn, 404, %{error: "Feature category #{id} not found"})
 
       data ->
         send_json_resp(conn, data)
@@ -855,7 +756,7 @@ defmodule SchemaWeb.SchemaController do
     tag("Dictionary")
 
     parameters do
-      extensions(:query, :array, "Related extensions to include in response.",
+      extensions(:query, :array, "Related schema extensions to include in response.",
         items: [type: :string]
       )
     end
@@ -886,7 +787,7 @@ defmodule SchemaWeb.SchemaController do
     summary("Base class")
     description("Get OASF schema base class.")
     produces("application/json")
-    tag("Categories and Classes")
+    tag("All Categories and Classes")
 
     parameters do
       profiles(:query, :array, "Related profiles to include in response.", items: [type: :string])
@@ -909,12 +810,12 @@ defmodule SchemaWeb.SchemaController do
     summary("Class")
 
     description(
-      "Get OASF schema class by name. The class name may contain an extension name." <>
+      "Get OASF schema class by name. The class name may contain a schema extension name." <>
         " For example, \"dev/cpu_usage\"."
     )
 
     produces("application/json")
-    tag("Categories and Classes")
+    tag("All Categories and Classes")
 
     parameters do
       name(:path, :string, "Class name", required: true)
@@ -948,13 +849,13 @@ defmodule SchemaWeb.SchemaController do
   """
   swagger_path :classes do
     get("/api/classes")
-    summary("List classes")
-    description("Get OASF schema classes.")
+    summary("List all classes")
+    description("Get all OASF schema classes (skills, domains, features).")
     produces("application/json")
-    tag("Categories and Classes")
+    tag("All Categories and Classes")
 
     parameters do
-      extensions(:query, :array, "Related extensions to include in response.",
+      extensions(:query, :array, "Related schema extensions to include in response.",
         items: [type: :string]
       )
 
@@ -996,10 +897,10 @@ defmodule SchemaWeb.SchemaController do
   """
   swagger_path :skill do
     get("/api/skills/{name}")
-    summary("skill")
+    summary("Skill")
 
     description(
-      "Get OASF schema skill by name. The skill name may contain an extension name." <>
+      "Get OASF skill class by name. The skill name may contain a schema extension name." <>
         " For example, \"dev/cpu_usage\"."
     )
 
@@ -1007,7 +908,7 @@ defmodule SchemaWeb.SchemaController do
     tag("Skills")
 
     parameters do
-      name(:path, :string, "skill name", required: true)
+      name(:path, :string, "Skill class name", required: true)
       profiles(:query, :array, "Related profiles to include in response.", items: [type: :string])
     end
 
@@ -1025,7 +926,7 @@ defmodule SchemaWeb.SchemaController do
 
     case Schema.skill(extension, id, parse_options(profiles(params))) do
       nil ->
-        send_json_resp(conn, 404, %{error: "skill #{id} not found"})
+        send_json_resp(conn, 404, %{error: "Skill #{id} not found"})
 
       data ->
         skill = add_objects(data, params)
@@ -1038,20 +939,20 @@ defmodule SchemaWeb.SchemaController do
   """
   swagger_path :skills do
     get("/api/skills")
-    summary("List skills")
-    description("Get OASF schema skills.")
+    summary("List all skills")
+    description("Get OASF skill classes.")
     produces("application/json")
     tag("Skills")
 
     parameters do
-      extensions(:query, :array, "Related extensions to include in response.",
+      extensions(:query, :array, "Related schema extensions to include in response.",
         items: [type: :string]
       )
 
       profiles(:query, :array, "Related profiles to include in response.", items: [type: :string])
     end
 
-    response(200, "Success", :SkillDesc)
+    response(200, "Success", :ClassDesc)
   end
 
   @spec skills(Plug.Conn.t(), map()) :: Plug.Conn.t()
@@ -1089,7 +990,7 @@ defmodule SchemaWeb.SchemaController do
     summary("Domain")
 
     description(
-      "Get OASF schema domain by name. The domain name may contain an extension name." <>
+      "Get OASF domain class by name. The domain name may contain a schema extension name." <>
         " For example, \"dev/cpu_usage\"."
     )
 
@@ -1097,7 +998,7 @@ defmodule SchemaWeb.SchemaController do
     tag("Domains")
 
     parameters do
-      name(:path, :string, "Domain name", required: true)
+      name(:path, :string, "Domain class name", required: true)
       profiles(:query, :array, "Related profiles to include in response.", items: [type: :string])
     end
 
@@ -1128,20 +1029,20 @@ defmodule SchemaWeb.SchemaController do
   """
   swagger_path :domains do
     get("/api/domains")
-    summary("List domains")
-    description("Get OASF schema domains.")
+    summary("List all domains")
+    description("Get OASF domain classes.")
     produces("application/json")
     tag("Domains")
 
     parameters do
-      extensions(:query, :array, "Related extensions to include in response.",
+      extensions(:query, :array, "Related schema extensions to include in response.",
         items: [type: :string]
       )
 
       profiles(:query, :array, "Related profiles to include in response.", items: [type: :string])
     end
 
-    response(200, "Success", :DomainDesc)
+    response(200, "Success", :ClassDesc)
   end
 
   @spec domains(Plug.Conn.t(), map()) :: Plug.Conn.t()
@@ -1179,7 +1080,7 @@ defmodule SchemaWeb.SchemaController do
     summary("Feature")
 
     description(
-      "Get OASF schema feature by name. The feature name may contain an extension name." <>
+      "Get OASF feature class by name. The feature name may contain a schema extension name." <>
         " For example, \"dev/cpu_usage\"."
     )
 
@@ -1187,7 +1088,7 @@ defmodule SchemaWeb.SchemaController do
     tag("Features")
 
     parameters do
-      name(:path, :string, "Feature name", required: true)
+      name(:path, :string, "Feature class name", required: true)
       profiles(:query, :array, "Related profiles to include in response.", items: [type: :string])
     end
 
@@ -1218,20 +1119,20 @@ defmodule SchemaWeb.SchemaController do
   """
   swagger_path :features do
     get("/api/features")
-    summary("List features")
-    description("Get OASF schema features.")
+    summary("List all features")
+    description("Get OASF feature classes.")
     produces("application/json")
     tag("Features")
 
     parameters do
-      extensions(:query, :array, "Related extensions to include in response.",
+      extensions(:query, :array, "Related schema extensions to include in response.",
         items: [type: :string]
       )
 
       profiles(:query, :array, "Related profiles to include in response.", items: [type: :string])
     end
 
-    response(200, "Success", :FeatureDesc)
+    response(200, "Success", :ClassDesc)
   end
 
   @spec features(Plug.Conn.t(), map()) :: Plug.Conn.t()
@@ -1270,7 +1171,7 @@ defmodule SchemaWeb.SchemaController do
     summary("Object")
 
     description(
-      "Get OASF schema object by name. The object name may contain an extension name." <>
+      "Get OASF schema object by name. The object name may contain a schema extension name." <>
         " For example, \"dev/os_service\"."
     )
 
@@ -1280,7 +1181,7 @@ defmodule SchemaWeb.SchemaController do
     parameters do
       name(:path, :string, "Object name", required: true)
 
-      extensions(:query, :array, "Related extensions to include in response.",
+      extensions(:query, :array, "Related schema extensions to include in response.",
         items: [type: :string]
       )
 
@@ -1313,7 +1214,7 @@ defmodule SchemaWeb.SchemaController do
     tag("Objects and Types")
 
     parameters do
-      extensions(:query, :array, "Related extensions to include in response.",
+      extensions(:query, :array, "Related schema extensions to include in response.",
         items: [type: :string]
       )
     end
@@ -1468,7 +1369,7 @@ defmodule SchemaWeb.SchemaController do
 
     description(
       "Get OASF schema class by name, using JSON schema Draft-07 format " <>
-        "(see http://json-schema.org). The class name may contain an extension name. " <>
+        "(see http://json-schema.org). The class name may contain a schema extension name. " <>
         "For example, \"dev/cpu_usage\"."
     )
 
@@ -1529,7 +1430,7 @@ defmodule SchemaWeb.SchemaController do
 
     description(
       "Get OASF object by name, using JSON schema Draft-07 format (see http://json-schema.org)." <>
-        " The object name may contain an extension name. For example, \"dev/printer\"."
+        " The object name may contain a schema extension name. For example, \"dev/printer\"."
     )
 
     produces("application/json")
@@ -1924,7 +1825,7 @@ defmodule SchemaWeb.SchemaController do
 
     description(
       "This API returns randomly generated sample data for the given class name. The class" <>
-        " name may contain an extension name. For example, \"dev/cpu_usage\"."
+        " name may contain a schema extension name. For example, \"dev/cpu_usage\"."
     )
 
     produces("application/json")
@@ -1983,7 +1884,7 @@ defmodule SchemaWeb.SchemaController do
 
     description(
       "This API returns randomly generated sample data for the given object name. The object" <>
-        " name may contain an extension name. For example, \"dev/os_service\"."
+        " name may contain a schema extension name. For example, \"dev/os_service\"."
     )
 
     produces("application/json")
