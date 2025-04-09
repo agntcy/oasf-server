@@ -101,34 +101,8 @@ defmodule Schema.Generator do
   end
 
   defp generate_classes(n, {_name, field}) do
-    # Filter to include only children classes that are not hidden
-    valid_classes =
-      find_descendants(Schema.all_classes(), field.class_name)
-      |> Enum.map(&Schema.find_class_by_name(&1.name))
-      |> Enum.filter(&(&1 != nil))
-
-    case valid_classes do
-      [] ->
-        {:error, "No matching class found"}
-
-      _ ->
-        Enum.map(1..n, fn _ ->
-          generate_sample_class(
-            Enum.random(valid_classes),
-            Process.get(:profiles)
-          )
-        end)
-    end
-  end
-
-  defp find_descendants(classes, base_extends) do
-    classes
-    |> Enum.filter(fn {_key, class} ->
-      Map.has_key?(class, :extends) && class.extends == base_extends
-    end)
-    |> Enum.map(fn {_key, class} -> class end)
-    |> Enum.flat_map(fn class ->
-      [class | find_descendants(classes, class.name)]
+    Enum.map(1..n, fn _ ->
+      get_valid_class(field) |> generate_sample_class(Process.get(:profiles))
     end)
   end
 
@@ -233,6 +207,10 @@ defmodule Schema.Generator do
         case field[:type] do
           "object_t" ->
             generate_object(field[:requirement], name, attribute, map)
+
+          "class_t" ->
+            get_valid_class(field)
+            |> generate_sample_class(Process.get(:profiles))
 
           nil ->
             Logger.warning("Invalid type name: #{name}")
@@ -357,15 +335,19 @@ defmodule Schema.Generator do
   defp generate_array({name, field} = attribute) do
     n = random(@max_array_size)
 
-    case field[:type] do
-      "object_t" ->
-        generate_objects(n, attribute)
+    if n > 0 do
+      case field[:type] do
+        "object_t" ->
+          generate_objects(n, attribute)
 
-      "class_t" ->
-        generate_classes(n, attribute)
+        "class_t" ->
+          generate_classes(n, attribute)
 
-      type ->
-        Enum.map(1..n, fn _ -> generate_data(name, type, field) end)
+        type ->
+          Enum.map(1..n, fn _ -> generate_data(name, type, field) end)
+      end
+    else
+      []
     end
   end
 
@@ -398,11 +380,7 @@ defmodule Schema.Generator do
   end
 
   defp generate_object({_name, field}) do
-    find_object(field) |> generate_sample_object(Process.get(:profiles))
-  end
-
-  defp find_object(field) do
-    Schema.object(field[:object_type])
+    get_valid_object(field) |> generate_sample_object(Process.get(:profiles))
   end
 
   defp generate_file_object(field) do
@@ -433,12 +411,9 @@ defmodule Schema.Generator do
   end
 
   defp generate_objects(n, {_name, field}) do
-    object =
-      field[:object_type]
-      |> String.to_atom()
-      |> Schema.object()
-
-    Enum.map(1..n, fn _ -> generate_sample_object(object, Process.get(:profiles)) end)
+    Enum.map(1..n, fn _ ->
+      get_valid_object(field) |> generate_sample_object(Process.get(:profiles))
+    end)
   end
 
   defp generate_data(:ref_time, _type, _field),
@@ -818,6 +793,51 @@ defmodule Schema.Generator do
       _uid ->
         Map.put(data, "uid", uid) |> write_json(file)
         uid + 1
+    end
+  end
+
+  defp get_valid_class(field) do
+    valid_classes =
+      if field[:is_enum] do
+        # Filter to include only children classes that are not hidden
+        Utils.find_children(Schema.all_classes(), field[:class_type])
+        |> Enum.map(&Schema.find_class_by_name(&1.name))
+        |> Enum.filter(&(&1 != nil))
+      else
+        Schema.find_class_by_name(field[:class_type]) |> List.wrap()
+      end
+
+    case valid_classes do
+      [] ->
+        Logger.error("No matching class found for #{field[:class_type]}")
+
+      _ ->
+        Enum.random(valid_classes)
+    end
+  end
+
+  defp get_valid_object(field) do
+    valid_objects =
+      if field[:is_enum] do
+        Utils.find_children(Schema.objects(), field[:object_type])
+        |> Enum.map(fn descendant ->
+          descendant[:name]
+          |> String.to_atom()
+          |> Schema.object()
+        end)
+      else
+        field[:object_type]
+        |> String.to_atom()
+        |> Schema.object()
+        |> List.wrap()
+      end
+
+    case valid_objects do
+      [] ->
+        Logger.error("No matching object found for #{field[:object_type]}")
+
+      _ ->
+        Enum.random(valid_objects)
     end
   end
 
