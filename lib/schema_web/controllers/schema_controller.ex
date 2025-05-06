@@ -74,24 +74,27 @@ defmodule SchemaWeb.SchemaController do
             ]
           })
         end,
-      ClassDesc:
+      SkillDesc:
         swagger_schema do
-          title("Class Descriptor")
-          description("Schema class descriptor.")
+          title("Skill Class Descriptor")
+          description("Schema skill class descriptor.")
+          type(:object)
 
           properties do
-            name(:string, "Class name", required: true)
-            caption(:string, "Class caption", required: true)
-            description(:string, "Class description", required: true)
-            category(:string, "Class category", required: true)
-            category_name(:string, "Class category caption", required: true)
-            profiles(:array, "Class profiles", items: %PhoenixSwagger.Schema{type: :string})
-            uid(:integer, "Class unique identifier", required: true)
+            name(:string, "Skill class name", required: true)
+            family(:string, "Skill class family", required: true)
+            caption(:string, "Skill class caption", required: true)
+            description(:string, "Skill class description", required: true)
+            category(:string, "Skill class category", required: true)
+            category_name(:string, "Skill class category caption", required: true)
+            profiles(:array, "Skill class profiles", items: %PhoenixSwagger.Schema{type: :string})
+            uid(:integer, "Skill class unique identifier", required: true)
           end
 
           example([
             %{
               name: "problem_solving",
+              family: "skill",
               description:
                 "Assisting with solving problems by generating potential solutions or strategies.",
               category: "nlp",
@@ -100,6 +103,206 @@ defmodule SchemaWeb.SchemaController do
               caption: "Problem Solving",
               category_name: "Natural Language Processing",
               category_uid: 1
+            }
+          ])
+        end,
+      SkillsDesc:
+        swagger_schema do
+          title("Skill Class Descriptors")
+          description("A collection of Skill Class Descriptors.")
+          type(:array)
+          items(Schema.ref(:SkillDesc))
+
+          example([
+            %{
+              name: "question_generation",
+              family: "skill",
+              description:
+                "Automatically generating relevant and meaningful questions from a given text or context.",
+              category: "nlp",
+              extends: "natural_language_generation",
+              uid: 10205,
+              caption: "Question Generation",
+              category_name: "Natural Language Processing",
+              category_uid: 1
+            },
+            %{
+              name: "speech_recognition",
+              family: "skill",
+              description: "Converting spoken language into written text.",
+              category: "multi_modal",
+              extends: "audio_processing",
+              uid: 70202,
+              caption: "Automatic Speech Recognition",
+              category_name: "Multi-modal",
+              category_uid: 7
+            },
+            %{
+              name: "dialogue_generation",
+              family: "skill",
+              description:
+                "Producing conversational responses that are contextually relevant and engaging within a dialogue context.",
+              category: "nlp",
+              extends: "natural_language_generation",
+              uid: 10204,
+              caption: "Dialogue Generation",
+              category_name: "Natural Language Processing",
+              category_uid: 1
+            }
+          ])
+        end,
+      DomainDesc:
+        swagger_schema do
+          title("Domain Class Descriptor")
+          description("Schema domain class descriptor.")
+
+          properties do
+            name(:string, "Domain class name", required: true)
+            family(:string, "Domain class family", required: true)
+            caption(:string, "Domain class caption", required: true)
+            description(:string, "Domain class description", required: true)
+            category(:string, "Domain class category", required: true)
+            category_name(:string, "Domain class category caption", required: true)
+
+            profiles(:array, "Domain class profiles",
+              items: %PhoenixSwagger.Schema{type: :string}
+            )
+
+            uid(:integer, "Domain class unique identifier", required: true)
+          end
+
+          example([
+            %{
+              name: "information_technology",
+              family: "domain",
+              description:
+                "All aspects of managing and supporting technology systems and infrastructure.",
+              category: "technology",
+              extends: "technology",
+              uid: 106,
+              caption: "Information Technology",
+              category_name: "Technology",
+              category_uid: 1
+            }
+          ])
+        end,
+      DomainsDesc:
+        swagger_schema do
+          title("Domain Class Descriptors")
+          description("A collection of Domain Class Descriptors.")
+          type(:array)
+          items(Schema.ref(:DomainDesc))
+
+          example([
+            %{
+              name: "process_engineering",
+              family: "domain",
+              description:
+                "Designing, implementing, and optimizing industrial processes to improve efficiency and quality. Subdomains: Process Design, Process Optimization, Quality Control, and Safety Engineering.",
+              category: "industrial_manufacturing",
+              extends: "industrial_manufacturing",
+              uid: 705,
+              caption: "Process Engineering",
+              category_name: "Industrial Manufacturing",
+              category_uid: 7
+            },
+            %{
+              name: "data_privacy",
+              family: "domain",
+              description:
+                "Safeguarding personal information from unauthorized access and ensuring compliance with privacy laws and regulations. Subdomains: Privacy Regulations Compliance, Data Encryption, Data Anonymization, and User Consent Management.",
+              category: "trust_and_safety",
+              extends: "trust_and_safety_domain",
+              uid: 404,
+              caption: "Data Privacy",
+              category_name: "Trust and Safety",
+              category_uid: 4
+            },
+            %{
+              name: "robotics",
+              family: "domain",
+              description:
+                "Designing and using robots for manufacturing tasks to enhance productivity and precision. Subdomains: Robotic Process Automation, Industrial Robotics, AI and Robotics, and Collaborative Robots.",
+              category: "industrial_manufacturing",
+              extends: "industrial_manufacturing",
+              uid: 702,
+              caption: "Robotics",
+              category_name: "Industrial Manufacturing",
+              category_uid: 7
+            }
+          ])
+        end,
+      FeatureDesc:
+        swagger_schema do
+          title("Feature Class Descriptor")
+          description("Schema Feature class descriptor.")
+
+          properties do
+            name(:string, "Feature class name", required: true)
+            family(:string, "Feature class family", required: true)
+            caption(:string, "Feature class caption", required: true)
+            description(:string, "Feature class description", required: true)
+            category(:string, "Feature class category", required: true)
+            category_name(:string, "Feature class category caption", required: true)
+
+            profiles(:array, "Feature class profiles",
+              items: %PhoenixSwagger.Schema{type: :string}
+            )
+
+            uid(:integer, "Feature class unique identifier", required: true)
+          end
+
+          example([
+            %{
+              name: "observability",
+              family: "feature",
+              description: "Agent extension describing how the agent can be observed",
+              category: "observability",
+              extends: "base_feature",
+              uid: 101,
+              caption: "Observability",
+              category_name: "Observability"
+            }
+          ])
+        end,
+      FeaturesDesc:
+        swagger_schema do
+          title("Feature Class Descriptors")
+          description("A collection of Feature Class Descriptors.")
+          type(:array)
+          items(Schema.ref(:FeatureDesc))
+
+          example([
+            %{
+              name: "manifest",
+              family: "feature",
+              description: "Agent manifest",
+              category: "runtime",
+              extends: "runtime",
+              uid: 301,
+              caption: "Manifest",
+              category_name: "Runtime"
+            },
+            %{
+              name: "observability",
+              family: "feature",
+              description: "Agent extension describing how the agent can be observed",
+              category: "observability",
+              extends: "base_feature",
+              uid: 101,
+              caption: "Observability",
+              category_name: "Observability"
+            },
+            %{
+              name: "evaluation",
+              family: "feature",
+              description:
+                "Assessing actions and outcomes to determine their effectiveness, guiding future decision-making and enhancing personal agency.",
+              category: "evaluation",
+              extends: "base_feature",
+              uid: 201,
+              caption: "Evaluation",
+              category_name: "Evaluation"
             }
           ])
         end,
@@ -112,28 +315,148 @@ defmodule SchemaWeb.SchemaController do
             name(:string, "Object name", required: true)
             caption(:string, "Object caption", required: true)
             description(:string, "Object description", required: true)
+            extends(:string, "Object parent class name", required: true)
             observable(:integer, "Observable ID")
             profiles(:array, "Object profiles", items: %PhoenixSwagger.Schema{type: :string})
           end
 
           example([
             %{
-              caption: "File",
+              name: "streaming_modes",
               description:
-                "The file object describes files, folders, links and mounts," <>
-                  " including the reputation information, if applicable.",
-              name: "file",
-              observable: 24,
-              profiles: [
-                "file_security"
-              ]
+                "Supported streaming modes. If missing, streaming is not supported.  If no mode is supported attempts to stream output will result in an error.",
+              extends: "object",
+              caption: "Streaming Modes"
             }
           ])
         end,
-      Class:
+      ObjectsDesc:
         swagger_schema do
-          title("Class")
-          description("An OASF formatted class object.")
+          title("Object Descriptors")
+          description("A collection of Object Descriptors.")
+          type(:array)
+          items(Schema.ref(:ObjectDesc))
+
+          example([
+            %{
+              name: "streaming_modes",
+              description:
+                "Supported streaming modes. If missing, streaming is not supported.  If no mode is supported attempts to stream output will result in an error.",
+              extends: "object",
+              caption: "Streaming Modes"
+            },
+            %{
+              name: "deployment_option",
+              description: "Describes a deployment option for an agent.",
+              extends: "object",
+              caption: "Deployment Option"
+            },
+            %{
+              name: "docker_deployment",
+              description: "Describes the docker deployment for this agent.",
+              extends: "deployment_option",
+              caption: "Docker Deployment"
+            }
+          ])
+        end,
+      Skill:
+        swagger_schema do
+          title("Skill class")
+          description("An OASF formatted skill class object.")
+          type(:object)
+
+          properties do
+            class_name(:string, "The class name, as defined by class_uid value")
+
+            class_uid(
+              :integer,
+              "The unique identifier of a class"
+            )
+
+            category_name(
+              :string,
+              "The class category name, as defined by category_uid value"
+            )
+
+            category_uid(:integer, "The category unique identifier of the class")
+          end
+
+          example(%{
+            category_name: "Natural Language Processing",
+            category_uid: 1,
+            class_uid: 10101,
+            class_name: "Contextual Comprehension"
+          })
+        end,
+      Domain:
+        swagger_schema do
+          title("Domain class")
+          description("An OASF formatted domain class object.")
+          type(:object)
+
+          properties do
+            class_name(:string, "The class name, as defined by class_uid value")
+
+            class_uid(
+              :integer,
+              "The unique identifier of a class"
+            )
+
+            category_name(
+              :string,
+              "The class category name, as defined by category_uid value"
+            )
+
+            category_uid(:integer, "The category unique identifier of the class")
+          end
+
+          example(%{
+            category_name: "Internet of Things (IoT)",
+            category_uid: 1,
+            class_uid: 101,
+            class_name: "Technology"
+          })
+        end,
+      Feature:
+        swagger_schema do
+          title("Feature class")
+          description("An OASF formatted feature class object.")
+          type(:object)
+
+          properties do
+            name(:string, "The agent extension name")
+
+            version(
+              :string,
+              "The schema version"
+            )
+
+            data(
+              :object,
+              "The data associated with the agent extension"
+            )
+          end
+
+          example(%{
+            data: %{
+              communication_protocols: ["AGP"],
+              data_platform_integrations: [],
+              data_schema: %{
+                name: "Agntcy Observability Data Schema",
+                version: "v0.0.1",
+                url:
+                  "https://github.com/agntcy/oasf/blob/main/schema/references/agntcy_observability/agntcy_observability_data_schema.json"
+              },
+              export_format: "csv"
+            },
+            name: "oasf.agntcy.org/feature/observability/observability",
+            version: "v0.2.2"
+          })
+        end,
+      Object:
+        swagger_schema do
+          title("Object")
+          description("An OASF formatted object.")
           type(:object)
         end,
       ValidationError:
@@ -160,13 +483,12 @@ defmodule SchemaWeb.SchemaController do
 
           additional_properties(true)
         end,
-      ClassValidation:
+      Validation:
         swagger_schema do
-          title("Class Validation")
-          description("The errors and and warnings found when validating an class.")
+          title("Class or object Validation")
+          description("The errors and and warnings found when validating a class or an object.")
 
           properties do
-            uid(:string, "The class's metadata.uid, if available")
             error(:string, "Overall error message")
 
             errors(
@@ -187,32 +509,46 @@ defmodule SchemaWeb.SchemaController do
 
           additional_properties(false)
         end,
-      ClassBundle:
+      SkillBundle:
         swagger_schema do
-          title("Class Bundle")
-          description("A bundle of classes.")
+          title("Skill Class Bundle")
+          description("A bundle of skill classes.")
 
           properties do
-            classes(
+            inputs(
               :array,
-              "Array of classes.",
-              items: %PhoenixSwagger.Schema{"$ref": "#/definitions/Class"},
+              "Array of skill classes.",
+              items: %PhoenixSwagger.Schema{"$ref": "#definitions/Skill"},
               required: true
             )
 
-            start_time(:integer, "Earliest class time in Epoch milliseconds (OASF timestamp_t)")
-            end_time(:integer, "Latest class time in Epoch milliseconds (OASF timestamp_t)")
-            start_time_dt(:string, "Earliest class time in RFC 3339 format (OASF datetime_t)")
-            end_time_dt(:string, "Latest class time in RFC 3339 format (OASF datetime_t)")
             count(:integer, "Count of classes")
           end
 
+          example(%{
+            count: 2,
+            inputs: [
+              %{
+                category_name: "Natural Language Processing",
+                category_uid: 1,
+                class_uid: 10101,
+                class_name: "Contextual Comprehension"
+              },
+              %{
+                category_name: "Natural Language Processing",
+                category_uid: 1,
+                class_uid: 10203,
+                class_name: "Text Paraphrasing"
+              }
+            ]
+          })
+
           additional_properties(false)
         end,
-      ClassBundleValidation:
+      SkillBundleValidation:
         swagger_schema do
-          title("Class Bundle Validation")
-          description("The errors and and warnings found when validating an class bundle.")
+          title("Skill Class Bundle Validation")
+          description("The errors and and warnings found when validating a skill class bundle.")
 
           properties do
             error(:string, "Overall error message")
@@ -232,10 +568,151 @@ defmodule SchemaWeb.SchemaController do
             error_count(:integer, "Count of errors of the bundle itself")
             warning_count(:integer, "Count of warnings of the bundle itself")
 
-            class_validations(
+            input_validations(
               :array,
-              "Array of class validations",
-              items: %PhoenixSwagger.Schema{"$ref": "#/definitions/ClassValidation"},
+              "Array of skill class validations",
+              items: %PhoenixSwagger.Schema{"$ref": "#/definitions/Validation"},
+              required: true
+            )
+          end
+
+          additional_properties(false)
+        end,
+      DomainBundle:
+        swagger_schema do
+          title("Domain Class Bundle")
+          description("A bundle of domain classes.")
+
+          properties do
+            inputs(
+              :array,
+              "Array of domain classes.",
+              items: %PhoenixSwagger.Schema{"$ref": "#definitions/Domain"},
+              required: true
+            )
+
+            count(:integer, "Count of classes")
+          end
+
+          example(%{
+            count: 2,
+            inputs: [
+              %{
+                category_name: "Technology",
+                category_uid: 1,
+                class_uid: 101,
+                class_name: "Internet of Things (IoT)"
+              },
+              %{
+                category_name: "Trust and Safety",
+                category_uid: 4,
+                class_uid: 403,
+                class_name: "Fraud Prevention"
+              }
+            ]
+          })
+
+          additional_properties(false)
+        end,
+      DomainBundleValidation:
+        swagger_schema do
+          title("Domain Class Bundle Validation")
+          description("The errors and and warnings found when validating a domain class bundle.")
+
+          properties do
+            error(:string, "Overall error message")
+
+            errors(
+              :array,
+              "Validation errors of the bundle itself",
+              items: %PhoenixSwagger.Schema{type: :object}
+            )
+
+            warnings(
+              :array,
+              "Validation warnings of the bundle itself",
+              items: %PhoenixSwagger.Schema{type: :object}
+            )
+
+            error_count(:integer, "Count of errors of the bundle itself")
+            warning_count(:integer, "Count of warnings of the bundle itself")
+
+            input_validations(
+              :array,
+              "Array of domain class validations",
+              items: %PhoenixSwagger.Schema{"$ref": "#/definitions/Validation"},
+              required: true
+            )
+          end
+
+          additional_properties(false)
+        end,
+      FeatureBundle:
+        swagger_schema do
+          title("Feature Class Bundle")
+          description("A bundle of feature classes.")
+
+          properties do
+            inputs(
+              :array,
+              "Array of feature classes.",
+              items: %PhoenixSwagger.Schema{"$ref": "#definitions/Feature"},
+              required: true
+            )
+
+            count(:integer, "Count of classes")
+          end
+
+          example(%{
+            count: 1,
+            inputs: [
+              %{
+                data: %{
+                  communication_protocols: ["AGP"],
+                  data_platform_integrations: [],
+                  data_schema: %{
+                    name: "Agntcy Observability Data Schema",
+                    version: "v0.0.1",
+                    url:
+                      "https://github.com/agntcy/oasf/blob/main/schema/references/agntcy_observability/agntcy_observability_data_schema.json"
+                  },
+                  export_format: "csv"
+                },
+                name: "oasf.agntcy.org/feature/observability/observability",
+                version: "v0.2.2"
+              }
+            ]
+          })
+
+          additional_properties(false)
+        end,
+      FeatureBundleValidation:
+        swagger_schema do
+          title("Feature Class Bundle Validation")
+          description("The errors and and warnings found when validating a feature class bundle.")
+
+          properties do
+            error(:string, "Overall error message")
+
+            errors(
+              :array,
+              "Validation errors of the bundle itself",
+              items: %PhoenixSwagger.Schema{type: :object}
+            )
+
+            warnings(
+              :array,
+              "Validation warnings of the bundle itself",
+              items: %PhoenixSwagger.Schema{type: :object}
+            )
+
+            error_count(:integer, "Count of errors of the bundle itself")
+            warning_count(:integer, "Count of warnings of the bundle itself")
+
+            input_validations(
+              :array,
+              "Array of feature class validations",
+              items: %PhoenixSwagger.Schema{"$ref": "#/definitions/Validation"},
               required: true
             )
           end
@@ -323,7 +800,7 @@ defmodule SchemaWeb.SchemaController do
     summary("Data types")
     description("Get OASF schema data types.")
     produces("application/json")
-    tag("Objects and Types")
+    tag("Dictionary and Types")
     response(200, "Success")
   end
 
@@ -431,85 +908,6 @@ defmodule SchemaWeb.SchemaController do
   end
 
   @doc """
-  Get the schema categories.
-  """
-  swagger_path :categories do
-    get("/api/categories")
-    summary("List all categories")
-    description("Get all OASF schema categories (skills, domains, features).")
-    produces("application/json")
-    tag("All Categories and Classes")
-
-    parameters do
-      extensions(:query, :array, "Related schema extensions to include in response.",
-        items: [type: :string]
-      )
-    end
-
-    response(200, "Success")
-  end
-
-  @doc """
-  Returns the list of categories.
-  """
-  @spec categories(Plug.Conn.t(), map) :: Plug.Conn.t()
-  def categories(conn, params) do
-    send_json_resp(conn, categories(params))
-  end
-
-  @spec categories(map()) :: map()
-  def categories(params) do
-    parse_options(extensions(params)) |> Schema.categories()
-  end
-
-  @doc """
-  Get the classes defined in a given category.
-  """
-  swagger_path :category do
-    get("/api/categories/{name}")
-    summary("List all category classes (skills, domains, features)")
-
-    description(
-      "Get OASF schema classes defined in the named category. The category name may contain a" <>
-        " schema extension name. For example, \"dev/policy\"."
-    )
-
-    produces("application/json")
-    tag("All Categories and Classes")
-
-    parameters do
-      name(:path, :string, "Category name", required: true)
-
-      extensions(:query, :array, "Related schema extensions to include in response.",
-        items: [type: :string]
-      )
-    end
-
-    response(200, "Success")
-    response(404, "Category <code>name</code> not found")
-  end
-
-  @spec category(Plug.Conn.t(), map) :: Plug.Conn.t()
-  def category(conn, %{"id" => id} = params) do
-    case category_classes(params) do
-      nil ->
-        send_json_resp(conn, 404, %{error: "Category #{id} not found"})
-
-      data ->
-        send_json_resp(conn, data)
-    end
-  end
-
-  @spec category_classes(map()) :: map() | nil
-  def category_classes(params) do
-    name = params["id"]
-    extension = extension(params)
-    extensions = parse_options(extensions(params))
-
-    Schema.category(extensions, extension, name)
-  end
-
-  @doc """
   Get the schema main skills.
   """
   swagger_path :main_skills do
@@ -517,7 +915,7 @@ defmodule SchemaWeb.SchemaController do
     summary("List skill categories")
     description("Get all OASF skill classes by category.")
     produces("application/json")
-    tag("Skills")
+    tag("Categories")
 
     parameters do
       extensions(:query, :array, "Related schema extensions to include in response.",
@@ -554,7 +952,7 @@ defmodule SchemaWeb.SchemaController do
     )
 
     produces("application/json")
-    tag("Skills")
+    tag("Categories")
 
     parameters do
       name(:path, :string, "Skill category name", required: true)
@@ -596,7 +994,7 @@ defmodule SchemaWeb.SchemaController do
     summary("List domain categories")
     description("Get all OASF domain classes by category.")
     produces("application/json")
-    tag("Domains")
+    tag("Categories")
 
     parameters do
       extensions(:query, :array, "Related schema extensions to include in response.",
@@ -633,7 +1031,7 @@ defmodule SchemaWeb.SchemaController do
     )
 
     produces("application/json")
-    tag("Domains")
+    tag("Categories")
 
     parameters do
       name(:path, :string, "Domain category name", required: true)
@@ -675,7 +1073,7 @@ defmodule SchemaWeb.SchemaController do
     summary("List feature categories")
     description("Get all OASF feature classes by category.")
     produces("application/json")
-    tag("Features")
+    tag("Categories")
 
     parameters do
       extensions(:query, :array, "Related schema extensions to include in response.",
@@ -712,7 +1110,7 @@ defmodule SchemaWeb.SchemaController do
     )
 
     produces("application/json")
-    tag("Features")
+    tag("Categories")
 
     parameters do
       name(:path, :string, "Feature category name", required: true)
@@ -754,7 +1152,7 @@ defmodule SchemaWeb.SchemaController do
     summary("Dictionary")
     description("Get OASF schema dictionary.")
     produces("application/json")
-    tag("Dictionary")
+    tag("Dictionary and Types")
 
     parameters do
       extensions(:query, :array, "Related schema extensions to include in response.",
@@ -778,102 +1176,6 @@ defmodule SchemaWeb.SchemaController do
   @spec dictionary(map) :: map
   def dictionary(params) do
     parse_options(extensions(params)) |> Schema.dictionary()
-  end
-
-  @doc """
-  Get the schema base class.
-  """
-  swagger_path :base_class do
-    get("/api/base_class")
-    summary("Base class")
-    description("Get OASF schema base class.")
-    produces("application/json")
-    tag("All Categories and Classes")
-
-    parameters do
-      profiles(:query, :array, "Related profiles to include in response.", items: [type: :string])
-    end
-
-    response(200, "Success")
-  end
-
-  @spec base_class(Plug.Conn.t(), any) :: Plug.Conn.t()
-  def base_class(conn, params) do
-    class(conn, "base_class", params)
-  end
-
-  @doc """
-  Get an class by name.
-  get /api/classes/:name
-  """
-  swagger_path :class do
-    get("/api/classes/{name}")
-    summary("Class")
-
-    description(
-      "Get OASF schema class by name. The class name may contain a schema extension name." <>
-        " For example, \"dev/cpu_usage\"."
-    )
-
-    produces("application/json")
-    tag("All Categories and Classes")
-
-    parameters do
-      name(:path, :string, "Class name", required: true)
-      profiles(:query, :array, "Related profiles to include in response.", items: [type: :string])
-    end
-
-    response(200, "Success")
-    response(404, "Class <code>name</code> not found")
-  end
-
-  @spec class(Plug.Conn.t(), map()) :: Plug.Conn.t()
-  def class(conn, %{"id" => id} = params) do
-    class(conn, id, params)
-  end
-
-  defp class(conn, id, params) do
-    extension = extension(params)
-
-    case Schema.class(extension, id, parse_options(profiles(params))) do
-      nil ->
-        send_json_resp(conn, 404, %{error: "Class #{id} not found"})
-
-      data ->
-        class = add_objects(data, params)
-        send_json_resp(conn, class)
-    end
-  end
-
-  @doc """
-  Get the schema classes.
-  """
-  swagger_path :classes do
-    get("/api/classes")
-    summary("List all classes")
-    description("Get all OASF schema classes (skills, domains, features).")
-    produces("application/json")
-    tag("All Categories and Classes")
-
-    parameters do
-      extensions(:query, :array, "Related schema extensions to include in response.",
-        items: [type: :string]
-      )
-
-      profiles(:query, :array, "Related profiles to include in response.", items: [type: :string])
-    end
-
-    response(200, "Success", :ClassDesc)
-  end
-
-  @spec classes(Plug.Conn.t(), map()) :: Plug.Conn.t()
-  def classes(conn, params) do
-    classes =
-      Enum.map(classes(params), fn {_name, class} ->
-        Schema.reduce_class(class)
-      end)
-
-    send_json_resp(conn, classes)
   end
 
   @doc """
@@ -906,7 +1208,7 @@ defmodule SchemaWeb.SchemaController do
     )
 
     produces("application/json")
-    tag("Skills")
+    tag("Classes and Objects")
 
     parameters do
       name(:path, :string, "Skill class name", required: true)
@@ -943,7 +1245,7 @@ defmodule SchemaWeb.SchemaController do
     summary("List all skills")
     description("Get OASF skill classes.")
     produces("application/json")
-    tag("Skills")
+    tag("Classes and Objects")
 
     parameters do
       extensions(:query, :array, "Related schema extensions to include in response.",
@@ -953,7 +1255,7 @@ defmodule SchemaWeb.SchemaController do
       profiles(:query, :array, "Related profiles to include in response.", items: [type: :string])
     end
 
-    response(200, "Success", :ClassDesc)
+    response(200, "Success", :SkillsDesc)
   end
 
   @spec skills(Plug.Conn.t(), map()) :: Plug.Conn.t()
@@ -996,7 +1298,7 @@ defmodule SchemaWeb.SchemaController do
     )
 
     produces("application/json")
-    tag("Domains")
+    tag("Classes and Objects")
 
     parameters do
       name(:path, :string, "Domain class name", required: true)
@@ -1033,7 +1335,7 @@ defmodule SchemaWeb.SchemaController do
     summary("List all domains")
     description("Get OASF domain classes.")
     produces("application/json")
-    tag("Domains")
+    tag("Classes and Objects")
 
     parameters do
       extensions(:query, :array, "Related schema extensions to include in response.",
@@ -1043,7 +1345,7 @@ defmodule SchemaWeb.SchemaController do
       profiles(:query, :array, "Related profiles to include in response.", items: [type: :string])
     end
 
-    response(200, "Success", :ClassDesc)
+    response(200, "Success", :DomainsDesc)
   end
 
   @spec domains(Plug.Conn.t(), map()) :: Plug.Conn.t()
@@ -1086,7 +1388,7 @@ defmodule SchemaWeb.SchemaController do
     )
 
     produces("application/json")
-    tag("Features")
+    tag("Classes and Objects")
 
     parameters do
       name(:path, :string, "Feature class name", required: true)
@@ -1123,7 +1425,7 @@ defmodule SchemaWeb.SchemaController do
     summary("List all features")
     description("Get OASF feature classes.")
     produces("application/json")
-    tag("Features")
+    tag("Classes and Objects")
 
     parameters do
       extensions(:query, :array, "Related schema extensions to include in response.",
@@ -1133,7 +1435,7 @@ defmodule SchemaWeb.SchemaController do
       profiles(:query, :array, "Related profiles to include in response.", items: [type: :string])
     end
 
-    response(200, "Success", :ClassDesc)
+    response(200, "Success", :FeaturesDesc)
   end
 
   @spec features(Plug.Conn.t(), map()) :: Plug.Conn.t()
@@ -1177,7 +1479,7 @@ defmodule SchemaWeb.SchemaController do
     )
 
     produces("application/json")
-    tag("Objects and Types")
+    tag("Classes and Objects")
 
     parameters do
       name(:path, :string, "Object name", required: true)
@@ -1200,7 +1502,8 @@ defmodule SchemaWeb.SchemaController do
         send_json_resp(conn, 404, %{error: "Object #{id} not found"})
 
       data ->
-        send_json_resp(conn, add_objects(data, params))
+        object = add_objects(data, params)
+        send_json_resp(conn, object)
     end
   end
 
@@ -1212,7 +1515,7 @@ defmodule SchemaWeb.SchemaController do
     summary("List objects")
     description("Get OASF schema objects.")
     produces("application/json")
-    tag("Objects and Types")
+    tag("Classes and Objects")
 
     parameters do
       extensions(:query, :array, "Related schema extensions to include in response.",
@@ -1220,14 +1523,14 @@ defmodule SchemaWeb.SchemaController do
       )
     end
 
-    response(200, "Success", :ObjectDesc)
+    response(200, "Success", :ObjectsDesc)
   end
 
   @spec objects(Plug.Conn.t(), map) :: Plug.Conn.t()
   def objects(conn, params) do
     objects =
       Enum.map(objects(params), fn {_name, map} ->
-        Map.delete(map, :_links) |> Schema.delete_attributes()
+        Map.delete(map, :_links) |> Map.delete(:_children) |> Schema.delete_attributes()
       end)
 
     send_json_resp(conn, objects)
@@ -1280,31 +1583,6 @@ defmodule SchemaWeb.SchemaController do
     extensions = parse_options(extensions(params))
     data = Schema.export_schema(extensions, profiles)
     send_json_resp(conn, data)
-  end
-
-  @doc """
-  Export the OASF schema classes.
-  """
-  swagger_path :export_classes do
-    get("/export/classes")
-    summary("Export classes")
-    description("Get OASF schema classes.")
-    produces("application/json")
-    tag("Schema Export")
-
-    parameters do
-      extensions(:query, :array, @extensions_param_description, items: [type: :string])
-      profiles(:query, :array, @profiles_param_description, items: [type: :string])
-    end
-
-    response(200, "Success")
-  end
-
-  def export_classes(conn, params) do
-    profiles = parse_options(profiles(params))
-    extensions = parse_options(extensions(params))
-    classes = Schema.export_classes(extensions, profiles)
-    send_json_resp(conn, classes)
   end
 
   @doc """
@@ -1383,30 +1661,6 @@ defmodule SchemaWeb.SchemaController do
   end
 
   @doc """
-  Export the OASF base  class.
-  """
-  swagger_path :export_base_class do
-    get("/export/base_class")
-    summary("Export base class")
-    description("Get OASF schema base class.")
-    produces("application/json")
-    tag("Schema Export")
-
-    parameters do
-      profiles(:query, :array, @profiles_param_description, items: [type: :string])
-    end
-
-    response(200, "Success")
-  end
-
-  def export_base_class(conn, params) do
-    profiles = parse_options(profiles(params))
-    base_class = Schema.export_base_class(profiles)
-
-    send_json_resp(conn, base_class)
-  end
-
-  @doc """
   Export the OASF schema objects.
   """
   swagger_path :export_objects do
@@ -1436,39 +1690,38 @@ defmodule SchemaWeb.SchemaController do
   # -----------------
 
   @doc """
-  Get JSON schema definitions for a given class.
-  get /schema/classes/:name
+  Get JSON schema definitions for a given skill class.
+  get /schema/skills/:name
   """
-  swagger_path :json_class do
-    get("/schema/classes/{name}")
-    summary("Class")
+  swagger_path :json_skill_class do
+    get("/schema/skills/{name}")
+    summary("Skill")
 
     description(
-      "Get OASF schema class by name, using JSON schema Draft-07 format " <>
-        "(see http://json-schema.org). The class name may contain a schema extension name. " <>
-        "For example, \"dev/cpu_usage\"."
+      "Get OASF schema skill class by name, using JSON schema Draft-07 format " <>
+        "(see http://json-schema.org). The class name may contain a schema extension name. "
     )
 
     produces("application/json")
     tag("JSON Schema")
 
     parameters do
-      name(:path, :string, "Class name", required: true)
+      name(:path, :string, "Skill class name", required: true)
       profiles(:query, :array, "Related profiles to include in response.", items: [type: :string])
       package_name(:query, :string, "Java package name")
     end
 
     response(200, "Success")
-    response(404, "Class <code>name</code> not found")
+    response(404, "Skill class <code>name</code> not found")
   end
 
-  @spec json_class(Plug.Conn.t(), map()) :: Plug.Conn.t()
-  def json_class(conn, %{"id" => id} = params) do
+  @spec json_skill_class(Plug.Conn.t(), map()) :: Plug.Conn.t()
+  def json_skill_class(conn, %{"id" => id} = params) do
     options = Map.get(params, "package_name") |> parse_java_package()
 
-    case class_ex(id, params) do
+    case skill_ex(id, params) do
       nil ->
-        send_json_resp(conn, 404, %{error: "Class #{id} not found"})
+        send_json_resp(conn, 404, %{error: "Skill class #{id} not found"})
 
       data ->
         class = Schema.JsonSchema.encode(data, options)
@@ -1476,19 +1729,94 @@ defmodule SchemaWeb.SchemaController do
     end
   end
 
-  def class_ex(id, params) do
-    extension = extension(params)
-    Schema.class_ex(extension, id, parse_options(profiles(params)))
-  end
-
   def skill_ex(id, params) do
     extension = extension(params)
     Schema.skill_ex(extension, id, parse_options(profiles(params)))
   end
 
+  @doc """
+  Get JSON schema definitions for a given domain class.
+  get /schema/domains/:name
+  """
+  swagger_path :json_domain_class do
+    get("/schema/domains/{name}")
+    summary("Domain")
+
+    description(
+      "Get OASF schema domain class by name, using JSON schema Draft-07 format " <>
+        "(see http://json-schema.org). The class name may contain a schema extension name. "
+    )
+
+    produces("application/json")
+    tag("JSON Schema")
+
+    parameters do
+      name(:path, :string, "Domain class name", required: true)
+      profiles(:query, :array, "Related profiles to include in response.", items: [type: :string])
+      package_name(:query, :string, "Java package name")
+    end
+
+    response(200, "Success")
+    response(404, "Domain class <code>name</code> not found")
+  end
+
+  @spec json_domain_class(Plug.Conn.t(), map()) :: Plug.Conn.t()
+  def json_domain_class(conn, %{"id" => id} = params) do
+    options = Map.get(params, "package_name") |> parse_java_package()
+
+    case domain_ex(id, params) do
+      nil ->
+        send_json_resp(conn, 404, %{error: "Domain class #{id} not found"})
+
+      data ->
+        class = Schema.JsonSchema.encode(data, options)
+        send_json_resp(conn, class)
+    end
+  end
+
   def domain_ex(id, params) do
     extension = extension(params)
     Schema.domain_ex(extension, id, parse_options(profiles(params)))
+  end
+
+  @doc """
+  Get JSON schema definitions for a given feature class.
+  get /schema/features/:name
+  """
+  swagger_path :json_feature_class do
+    get("/schema/features/{name}")
+    summary("Feature")
+
+    description(
+      "Get OASF schema feature class by name, using JSON schema Draft-07 format " <>
+        "(see http://json-schema.org). The class name may contain a schema extension name. "
+    )
+
+    produces("application/json")
+    tag("JSON Schema")
+
+    parameters do
+      name(:path, :string, "Feature class name", required: true)
+      profiles(:query, :array, "Related profiles to include in response.", items: [type: :string])
+      package_name(:query, :string, "Java package name")
+    end
+
+    response(200, "Success")
+    response(404, "Feature class <code>name</code> not found")
+  end
+
+  @spec json_feature_class(Plug.Conn.t(), map()) :: Plug.Conn.t()
+  def json_feature_class(conn, %{"id" => id} = params) do
+    options = Map.get(params, "package_name") |> parse_java_package()
+
+    case feature_ex(id, params) do
+      nil ->
+        send_json_resp(conn, 404, %{error: "Feature class #{id} not found"})
+
+      data ->
+        class = Schema.JsonSchema.encode(data, options)
+        send_json_resp(conn, class)
+    end
   end
 
   def feature_ex(id, params) do
@@ -1497,8 +1825,8 @@ defmodule SchemaWeb.SchemaController do
   end
 
   @doc """
-  Get JSON schema definitions for a given class object.
-  get /schema/classes/:name
+  Get JSON schema definitions for a given object.
+  get /schema/objects/:name
   """
   swagger_path :json_object do
     get("/schema/objects/{name}")
@@ -1555,7 +1883,7 @@ defmodule SchemaWeb.SchemaController do
   """
   swagger_path :enrich_skill do
     post("/api/enrich/skill")
-    summary("Enrich Skill Class")
+    summary("Enrich skill class")
 
     description(
       "The purpose of this API is to enrich the provided skill class data with <code>type_uid</code>," <>
@@ -1564,7 +1892,7 @@ defmodule SchemaWeb.SchemaController do
     )
 
     produces("application/json")
-    tag("Tools")
+    tag("Enrichment")
 
     parameters do
       _enum_text(
@@ -1575,7 +1903,7 @@ defmodule SchemaWeb.SchemaController do
 
         |Value|Example|
         |-----|-------|
-        |true|Untranslated:<br/><code>{"category_uid":0,"class_uid":0,"activity_id": 0,"severity_id": 5,"status": "Something else","status_id": 99,"time": 1689125893360905}</code><br/><br/>Translated:<br/><code>{"activity_name": "Unknown", "activity_id": 0, "category_name": "Uncategorized", "category_uid": 0, "class_name": "Base Class", "class_uid": 0, "severity": "Critical", "severity_id": 5, "status": "Something else", "status_id": 99, "time": 1689125893360905, "type_name": "Base Class: Unknown", "type_uid": 0}</code>|
+        |true|Untranslated:<br/><code>{"category_uid":0,"class_uid":0</code><br/><br/>Translated:<br/><code>{"category_name": "Uncategorized", "category_uid": 0, "class_name": "Base Class", "class_uid": 0}</code>|
         """,
         default: false
       )
@@ -1588,7 +1916,7 @@ defmodule SchemaWeb.SchemaController do
         default: false
       )
 
-      data(:body, PhoenixSwagger.Schema.ref(:Class), "The skill class data to be enriched.",
+      data(:body, PhoenixSwagger.Schema.ref(:Skill), "The skill class data to be enriched.",
         required: true
       )
     end
@@ -1631,7 +1959,7 @@ defmodule SchemaWeb.SchemaController do
   """
   swagger_path :enrich_domain do
     post("/api/enrich/domain")
-    summary("Enrich domain Class")
+    summary("Enrich domain class")
 
     description(
       "The purpose of this API is to enrich the provided domain class data with <code>type_uid</code>," <>
@@ -1640,7 +1968,7 @@ defmodule SchemaWeb.SchemaController do
     )
 
     produces("application/json")
-    tag("Tools")
+    tag("Enrichment")
 
     parameters do
       _enum_text(
@@ -1651,7 +1979,7 @@ defmodule SchemaWeb.SchemaController do
 
         |Value|Example|
         |-----|-------|
-        |true|Untranslated:<br/><code>{"category_uid":0,"class_uid":0,"activity_id": 0,"severity_id": 5,"status": "Something else","status_id": 99,"time": 1689125893360905}</code><br/><br/>Translated:<br/><code>{"activity_name": "Unknown", "activity_id": 0, "category_name": "Uncategorized", "category_uid": 0, "class_name": "Base Class", "class_uid": 0, "severity": "Critical", "severity_id": 5, "status": "Something else", "status_id": 99, "time": 1689125893360905, "type_name": "Base Class: Unknown", "type_uid": 0}</code>|
+        |true|Untranslated:<br/><code>{"category_uid":0,"class_uid":0</code><br/><br/>Translated:<br/><code>{"category_name": "Uncategorized", "category_uid": 0, "class_name": "Base Class", "class_uid": 0}</code>|
         """,
         default: false
       )
@@ -1664,7 +1992,7 @@ defmodule SchemaWeb.SchemaController do
         default: false
       )
 
-      data(:body, PhoenixSwagger.Schema.ref(:Class), "The domain class data to be enriched.",
+      data(:body, PhoenixSwagger.Schema.ref(:Domain), "The domain class data to be enriched.",
         required: true
       )
     end
@@ -1705,7 +2033,7 @@ defmodule SchemaWeb.SchemaController do
   """
   swagger_path :translate_skill do
     post("/api/translate/skill")
-    summary("Translate Skill Class")
+    summary("Translate skill class")
 
     description(
       "The purpose of this API is to translate the provided skill class data using the OASF schema." <>
@@ -1714,7 +2042,7 @@ defmodule SchemaWeb.SchemaController do
     )
 
     produces("application/json")
-    tag("Tools")
+    tag("Translation")
 
     parameters do
       _mode(
@@ -1726,9 +2054,9 @@ defmodule SchemaWeb.SchemaController do
 
         |Value|Description|Example|
         |-----|-----------|-------|
-        |1|Translate only the enumerated values|Untranslated:<br/><code>{"class_uid": 1000}</code><br/><br/>Translated:<br/><code>{"class_name": File Activity", "class_uid": 1000}</code>|
-        |2|Translate enumerated values and attribute names|Untranslated:<br/><code>{"class_uid": 1000}</code><br/><br/>Translated:<br/><code>{"Class": File Activity", "Class ID": 1000}</code>|
-        |3|Verbose translation|Untranslated:<br/><code>{"class_uid": 1000}</code><br/><br/>Translated:<br/><code>{"class_uid": {"caption": "File Activity","name": "Class ID","type": "integer_t","value": 1000}}</code>|
+        |1|Translate only the enumerated values|Untranslated:<br/><code>{"class_uid": 10101}</code><br/><br/>Translated:<br/><code>{"class_name": "Contextual Comprehension", "class_uid": 10101}</code>|
+        |2|Translate enumerated values and attribute names|Untranslated:<br/><code>{"class_uid": 10101}</code><br/><br/>Translated:<br/><code>{"Class": "Contextual Comprehension", "Class ID": 10101}</code>|
+        |3|Verbose translation|Untranslated:<br/><code>{"class_uid": 10101}</code><br/><br/>Translated:<br/><code>{"class_uid": {"caption": "Contextual Comprehension","name": "Class ID","type": "integer_t","value": 10101}}</code>|
         """,
         default: 1
       )
@@ -1745,13 +2073,13 @@ defmodule SchemaWeb.SchemaController do
 
           |Value|Description|Example|
           |-----|-----------|-------|
-          |&lt;empty&gt;|The spaces in the translated names are removed.|Untranslated:<br/><code>{"class_uid": 1000}</code><br/><br/>Translated:<br/><code>{"ClassID": File Activity"}</code>|
-          |string|The spaces in the translated names are replaced with the given string.|For example, the string is an underscore (_).<br/>Untranslated:<br/><code>{"class_uid": 1000}</code><br/><br/>Translated:<br/><code>{"Class_ID": File Activity"}</code>|
+          |&lt;empty&gt;|The spaces in the translated names are removed.|Untranslated:<br/><code>{"class_uid": 10101}</code><br/><br/>Translated:<br/><code>{"ClassID": "Contextual Comprehension"}</code>|
+          |string|The spaces in the translated names are replaced with the given string.|For example, the string is an underscore (_).<br/>Untranslated:<br/><code>{"class_uid": 10101}</code><br/><br/>Translated:<br/><code>{"Class_ID": "Contextual Comprehension"}</code>|
         """,
         allowEmptyValue: true
       )
 
-      data(:body, PhoenixSwagger.Schema.ref(:Class), "The skill class data to be translated",
+      data(:body, PhoenixSwagger.Schema.ref(:Skill), "The skill class data to be translated",
         required: true
       )
     end
@@ -1787,7 +2115,7 @@ defmodule SchemaWeb.SchemaController do
   """
   swagger_path :translate_domain do
     post("/api/translate/domain")
-    summary("Translate domain Class")
+    summary("Translate domain class")
 
     description(
       "The purpose of this API is to translate the provided domain class data using the OASF schema." <>
@@ -1796,7 +2124,7 @@ defmodule SchemaWeb.SchemaController do
     )
 
     produces("application/json")
-    tag("Tools")
+    tag("Translation")
 
     parameters do
       _mode(
@@ -1808,9 +2136,9 @@ defmodule SchemaWeb.SchemaController do
 
         |Value|Description|Example|
         |-----|-----------|-------|
-        |1|Translate only the enumerated values|Untranslated:<br/><code>{"class_uid": 1000}</code><br/><br/>Translated:<br/><code>{"class_name": File Activity", "class_uid": 1000}</code>|
-        |2|Translate enumerated values and attribute names|Untranslated:<br/><code>{"class_uid": 1000}</code><br/><br/>Translated:<br/><code>{"Class": File Activity", "Class ID": 1000}</code>|
-        |3|Verbose translation|Untranslated:<br/><code>{"class_uid": 1000}</code><br/><br/>Translated:<br/><code>{"class_uid": {"caption": "File Activity","name": "Class ID","type": "integer_t","value": 1000}}</code>|
+        |1|Translate only the enumerated values|Untranslated:<br/><code>{"class_uid": 101}</code><br/><br/>Translated:<br/><code>{"class_name": "Internet of Things (IoT)", "class_uid": 101}</code>|
+        |2|Translate enumerated values and attribute names|Untranslated:<br/><code>{"class_uid": 101}</code><br/><br/>Translated:<br/><code>{"Class": "Internet of Things (IoT)", "Class ID": 101}</code>|
+        |3|Verbose translation|Untranslated:<br/><code>{"class_uid": 101}</code><br/><br/>Translated:<br/><code>{"class_uid": {"caption": "Internet of Things (IoT)","name": "Class ID","type": "integer_t","value": 101}}</code>|
         """,
         default: 1
       )
@@ -1827,13 +2155,13 @@ defmodule SchemaWeb.SchemaController do
 
           |Value|Description|Example|
           |-----|-----------|-------|
-          |&lt;empty&gt;|The spaces in the translated names are removed.|Untranslated:<br/><code>{"class_uid": 1000}</code><br/><br/>Translated:<br/><code>{"ClassID": File Activity"}</code>|
-          |string|The spaces in the translated names are replaced with the given string.|For example, the string is an underscore (_).<br/>Untranslated:<br/><code>{"class_uid": 1000}</code><br/><br/>Translated:<br/><code>{"Class_ID": File Activity"}</code>|
+          |&lt;empty&gt;|The spaces in the translated names are removed.|Untranslated:<br/><code>{"class_uid": 101}</code><br/><br/>Translated:<br/><code>{"ClassID": "Internet of Things (IoT)"}</code>|
+          |string|The spaces in the translated names are replaced with the given string.|For example, the string is an underscore (_).<br/>Untranslated:<br/><code>{"class_uid": 101}</code><br/><br/>Translated:<br/><code>{"Class_ID": "Internet of Things (IoT)"}</code>|
         """,
         allowEmptyValue: true
       )
 
-      data(:body, PhoenixSwagger.Schema.ref(:Class), "The domain class data to be translated",
+      data(:body, PhoenixSwagger.Schema.ref(:Domain), "The domain class data to be translated",
         required: true
       )
     end
@@ -1878,7 +2206,7 @@ defmodule SchemaWeb.SchemaController do
     )
 
     produces("application/json")
-    tag("Tools")
+    tag("Translation")
 
     parameters do
       _mode(
@@ -1888,11 +2216,11 @@ defmodule SchemaWeb.SchemaController do
         Controls how attribute names and enumerated values are translated.<br/>
         The format is _mode=[1|2|3]. The default mode is `1` -- translate enumerated values.
 
-        |Value|Description|Example|
-        |-----|-----------|-------|
-        |1|Translate only the enumerated values|Untranslated:<br/><code>{"class_uid": 1000}</code><br/><br/>Translated:<br/><code>{"class_name": File Activity", "class_uid": 1000}</code>|
-        |2|Translate enumerated values and attribute names|Untranslated:<br/><code>{"class_uid": 1000}</code><br/><br/>Translated:<br/><code>{"Class": File Activity", "Class ID": 1000}</code>|
-        |3|Verbose translation|Untranslated:<br/><code>{"class_uid": 1000}</code><br/><br/>Translated:<br/><code>{"class_uid": {"caption": "File Activity","name": "Class ID","type": "integer_t","value": 1000}}</code>|
+        |Value|Description|
+        |-----|-----------|
+        |1|Translate only the enumerated values|
+        |2|Translate enumerated values and attribute names|
+        |3|Verbose translation|
         """,
         default: 1
       )
@@ -1907,15 +2235,15 @@ defmodule SchemaWeb.SchemaController do
           want to forward to a database that does not support spaces.<br/>
           The format is _spaces=[&lt;empty&gt;|string].
 
-          |Value|Description|Example|
-          |-----|-----------|-------|
-          |&lt;empty&gt;|The spaces in the translated names are removed.|Untranslated:<br/><code>{"class_uid": 1000}</code><br/><br/>Translated:<br/><code>{"ClassID": File Activity"}</code>|
-          |string|The spaces in the translated names are replaced with the given string.|For example, the string is an underscore (_).<br/>Untranslated:<br/><code>{"class_uid": 1000}</code><br/><br/>Translated:<br/><code>{"Class_ID": File Activity"}</code>|
+          |Value|Description|
+          |-----|-----------|
+          |&lt;empty&gt;|The spaces in the translated names are removed.|
+          |string|The spaces in the translated names are replaced with the given string.|
         """,
         allowEmptyValue: true
       )
 
-      data(:body, PhoenixSwagger.Schema.ref(:Class), "The feature class data to be translated",
+      data(:body, PhoenixSwagger.Schema.ref(:Feature), "The feature class data to be translated",
         required: true
       )
     end
@@ -1960,7 +2288,7 @@ defmodule SchemaWeb.SchemaController do
     )
 
     produces("application/json")
-    tag("Tools")
+    tag("Translation")
 
     parameters do
       name(:path, :string, "Object name", required: true)
@@ -1972,11 +2300,11 @@ defmodule SchemaWeb.SchemaController do
         Controls how attribute names and enumerated values are translated.<br/>
         The format is _mode=[1|2|3]. The default mode is `1` -- translate enumerated values.
 
-        |Value|Description|Example|
-        |-----|-----------|-------|
-        |1|Translate only the enumerated values|Untranslated:<br/><code>{"class_uid": 1000}</code><br/><br/>Translated:<br/><code>{"class_name": File Activity", "class_uid": 1000}</code>|
-        |2|Translate enumerated values and attribute names|Untranslated:<br/><code>{"class_uid": 1000}</code><br/><br/>Translated:<br/><code>{"Class": File Activity", "Class ID": 1000}</code>|
-        |3|Verbose translation|Untranslated:<br/><code>{"class_uid": 1000}</code><br/><br/>Translated:<br/><code>{"class_uid": {"caption": "File Activity","name": "Class ID","type": "integer_t","value": 1000}}</code>|
+        |Value|Description|
+        |-----|-----------|
+        |1|Translate only the enumerated values|
+        |2|Translate enumerated values and attribute names|
+        |3|Verbose translation|
         """,
         default: 1
       )
@@ -1991,15 +2319,15 @@ defmodule SchemaWeb.SchemaController do
           want to forward to a database that does not support spaces.<br/>
           The format is _spaces=[&lt;empty&gt;|string].
 
-          |Value|Description|Example|
-          |-----|-----------|-------|
-          |&lt;empty&gt;|The spaces in the translated names are removed.|Untranslated:<br/><code>{"class_uid": 1000}</code><br/><br/>Translated:<br/><code>{"ClassID": File Activity"}</code>|
-          |string|The spaces in the translated names are replaced with the given string.|For example, the string is an underscore (_).<br/>Untranslated:<br/><code>{"class_uid": 1000}</code><br/><br/>Translated:<br/><code>{"Class_ID": File Activity"}</code>|
+          |Value|Description|
+          |-----|-----------|
+          |&lt;empty&gt;|The spaces in the translated names are removed.|
+          |string|The spaces in the translated names are replaced with the given string.|
         """,
         allowEmptyValue: true
       )
 
-      data(:body, PhoenixSwagger.Schema.ref(:Class), "The object data to be translated",
+      data(:body, PhoenixSwagger.Schema.ref(:Object), "The object data to be translated",
         required: true
       )
     end
@@ -2040,7 +2368,7 @@ defmodule SchemaWeb.SchemaController do
   """
   swagger_path :validate_skill do
     post("/api/validate/skill")
-    summary("Validate Skill Class")
+    summary("Validate skill class")
 
     description(
       "This API validates the provided skill class data against the OASF schema, returning a response" <>
@@ -2048,7 +2376,7 @@ defmodule SchemaWeb.SchemaController do
     )
 
     produces("application/json")
-    tag("Tools")
+    tag("Validation")
 
     parameters do
       missing_recommended(
@@ -2060,10 +2388,12 @@ defmodule SchemaWeb.SchemaController do
         default: false
       )
 
-      data(:body, PhoenixSwagger.Schema.ref(:Class), "The class to be validated", required: true)
+      data(:body, PhoenixSwagger.Schema.ref(:Skill), "The skill class to be validated",
+        required: true
+      )
     end
 
-    response(200, "Success", PhoenixSwagger.Schema.ref(:ClassValidation))
+    response(200, "Success", PhoenixSwagger.Schema.ref(:Validation))
   end
 
   @spec validate_skill(Plug.Conn.t(), map()) :: Plug.Conn.t()
@@ -2097,7 +2427,7 @@ defmodule SchemaWeb.SchemaController do
     )
 
     produces("application/json")
-    tag("Tools")
+    tag("Validation")
 
     parameters do
       missing_recommended(
@@ -2109,10 +2439,12 @@ defmodule SchemaWeb.SchemaController do
         default: false
       )
 
-      data(:body, PhoenixSwagger.Schema.ref(:Class), "The class to be validated", required: true)
+      data(:body, PhoenixSwagger.Schema.ref(:Domain), "The domain class to be validated",
+        required: true
+      )
     end
 
-    response(200, "Success", PhoenixSwagger.Schema.ref(:ClassValidation))
+    response(200, "Success", PhoenixSwagger.Schema.ref(:Validation))
   end
 
   @spec validate_domain(Plug.Conn.t(), map()) :: Plug.Conn.t()
@@ -2146,7 +2478,7 @@ defmodule SchemaWeb.SchemaController do
     )
 
     produces("application/json")
-    tag("Tools")
+    tag("Validation")
 
     parameters do
       missing_recommended(
@@ -2158,10 +2490,12 @@ defmodule SchemaWeb.SchemaController do
         default: false
       )
 
-      data(:body, PhoenixSwagger.Schema.ref(:Class), "The class to be validated", required: true)
+      data(:body, PhoenixSwagger.Schema.ref(:Feature), "The feature class to be validated",
+        required: true
+      )
     end
 
-    response(200, "Success", PhoenixSwagger.Schema.ref(:ClassValidation))
+    response(200, "Success", PhoenixSwagger.Schema.ref(:Validation))
   end
 
   @spec validate_feature(Plug.Conn.t(), map()) :: Plug.Conn.t()
@@ -2195,7 +2529,7 @@ defmodule SchemaWeb.SchemaController do
     )
 
     produces("application/json")
-    tag("Tools")
+    tag("Validation")
 
     parameters do
       name(:path, :string, "Object name", required: true)
@@ -2209,10 +2543,12 @@ defmodule SchemaWeb.SchemaController do
         default: false
       )
 
-      data(:body, PhoenixSwagger.Schema.ref(:Class), "The class to be validated", required: true)
+      data(:body, PhoenixSwagger.Schema.ref(:Object), "The object to be validated",
+        required: true
+      )
     end
 
-    response(200, "Success", PhoenixSwagger.Schema.ref(:ClassValidation))
+    response(200, "Success", PhoenixSwagger.Schema.ref(:Validation))
   end
 
   @spec validate_object(Plug.Conn.t(), map()) :: Plug.Conn.t()
@@ -2247,7 +2583,7 @@ defmodule SchemaWeb.SchemaController do
   """
   swagger_path :validate_bundle_skill do
     post("/api/validate_bundle/skill")
-    summary("Validate Skill Class Bundle")
+    summary("Validate skill class bundle")
 
     description(
       "This API validates the provided skill class bundle. The class bundle itself is validated, and" <>
@@ -2255,7 +2591,7 @@ defmodule SchemaWeb.SchemaController do
     )
 
     produces("application/json")
-    tag("Tools")
+    tag("Validation")
 
     parameters do
       missing_recommended(
@@ -2267,12 +2603,15 @@ defmodule SchemaWeb.SchemaController do
         default: false
       )
 
-      data(:body, PhoenixSwagger.Schema.ref(:ClassBundle), "The class bundle to be validated",
+      data(
+        :body,
+        PhoenixSwagger.Schema.ref(:SkillBundle),
+        "The skill class bundle to be validated",
         required: true
       )
     end
 
-    response(200, "Success", PhoenixSwagger.Schema.ref(:ClassBundleValidation))
+    response(200, "Success", PhoenixSwagger.Schema.ref(:SkillBundleValidation))
   end
 
   @spec validate_bundle_skill(Plug.Conn.t(), map) :: Plug.Conn.t()
@@ -2299,7 +2638,7 @@ defmodule SchemaWeb.SchemaController do
   """
   swagger_path :validate_bundle_domain do
     post("/api/validate_bundle/domain")
-    summary("Validate domain Class Bundle")
+    summary("Validate domain class bundle")
 
     description(
       "This API validates the provided domain class bundle. The class bundle itself is validated, and" <>
@@ -2307,7 +2646,7 @@ defmodule SchemaWeb.SchemaController do
     )
 
     produces("application/json")
-    tag("Tools")
+    tag("Validation")
 
     parameters do
       missing_recommended(
@@ -2319,12 +2658,15 @@ defmodule SchemaWeb.SchemaController do
         default: false
       )
 
-      data(:body, PhoenixSwagger.Schema.ref(:ClassBundle), "The class bundle to be validated",
+      data(
+        :body,
+        PhoenixSwagger.Schema.ref(:DomainBundle),
+        "The domain class bundle to be validated",
         required: true
       )
     end
 
-    response(200, "Success", PhoenixSwagger.Schema.ref(:ClassBundleValidation))
+    response(200, "Success", PhoenixSwagger.Schema.ref(:DomainBundleValidation))
   end
 
   @spec validate_bundle_domain(Plug.Conn.t(), map) :: Plug.Conn.t()
@@ -2351,7 +2693,7 @@ defmodule SchemaWeb.SchemaController do
   """
   swagger_path :validate_bundle_feature do
     post("/api/validate_bundle/feature")
-    summary("Validate feature Class Bundle")
+    summary("validate feature class bundle")
 
     description(
       "This API validates the provided feature class bundle. The class bundle itself is validated, and" <>
@@ -2359,7 +2701,7 @@ defmodule SchemaWeb.SchemaController do
     )
 
     produces("application/json")
-    tag("Tools")
+    tag("Validation")
 
     parameters do
       missing_recommended(
@@ -2371,12 +2713,15 @@ defmodule SchemaWeb.SchemaController do
         default: false
       )
 
-      data(:body, PhoenixSwagger.Schema.ref(:ClassBundle), "The class bundle to be validated",
+      data(
+        :body,
+        PhoenixSwagger.Schema.ref(:FeatureBundle),
+        "The feature class bundle to be validated",
         required: true
       )
     end
 
-    response(200, "Success", PhoenixSwagger.Schema.ref(:ClassBundleValidation))
+    response(200, "Success", PhoenixSwagger.Schema.ref(:FeatureBundleValidation))
   end
 
   @spec validate_bundle_feature(Plug.Conn.t(), map) :: Plug.Conn.t()
@@ -2410,38 +2755,16 @@ defmodule SchemaWeb.SchemaController do
   # --------------------------
 
   @doc """
-  Returns randomly generated class sample data for the base class.
+  Returns randomly generated skill class sample data for the given name.
+  get /sample/skills/:name
+  get /sample/skills/:extension/:name
   """
-  swagger_path :sample_base_class do
-    get("/sample/base_class")
-    summary("Base sample data")
-    description("This API returns randomly generated sample data for the base class.")
-    produces("application/json")
-    tag("Sample Data")
-
-    parameters do
-      profiles(:query, :array, "Related profiles to include in response.", items: [type: :string])
-    end
-
-    response(200, "Success")
-  end
-
-  @spec sample_base_class(Plug.Conn.t(), map()) :: Plug.Conn.t()
-  def sample_base_class(conn, params) do
-    sample_class(conn, "base_class", params)
-  end
-
-  @doc """
-  Returns randomly generated class sample data for the given name.
-  get /sample/classes/:name
-  get /sample/classes/:extension/:name
-  """
-  swagger_path :sample_class do
-    get("/sample/classes/{name}")
-    summary("Class sample data")
+  swagger_path :sample_skill do
+    get("/sample/skills/{name}")
+    summary("Skill class sample data")
 
     description(
-      "This API returns randomly generated sample data for the given class name. The class" <>
+      "This API returns randomly generated sample data for the given skill class name. The class" <>
         " name may contain a schema extension name. For example, \"dev/cpu_usage\"."
     )
 
@@ -2449,28 +2772,126 @@ defmodule SchemaWeb.SchemaController do
     tag("Sample Data")
 
     parameters do
-      name(:path, :string, "Class name", required: true)
+      name(:path, :string, "Skill class name", required: true)
       profiles(:query, :array, "Related profiles to include in response.", items: [type: :string])
     end
 
     response(200, "Success")
-    response(404, "Class <code>name</code> not found")
+    response(404, "Skill class <code>name</code> not found")
   end
 
-  @spec sample_class(Plug.Conn.t(), map()) :: Plug.Conn.t()
-  def sample_class(conn, %{"id" => id} = params) do
-    sample_class(conn, id, params)
+  @spec sample_skill(Plug.Conn.t(), map()) :: Plug.Conn.t()
+  def sample_skill(conn, %{"id" => id} = params) do
+    sample_skill(conn, id, params)
   end
 
-  defp sample_class(conn, id, options) do
+  defp sample_skill(conn, id, options) do
     # TODO: honor constraints
 
     extension = extension(options)
     profiles = profiles(options) |> parse_options()
 
-    case Schema.class(extension, id) do
+    case Schema.skill(extension, id) do
       nil ->
-        send_json_resp(conn, 404, %{error: "Class #{id} not found"})
+        send_json_resp(conn, 404, %{error: "Skill class #{id} not found"})
+
+      class ->
+        class =
+          Schema.generate_class(class, profiles)
+
+        send_json_resp(conn, class)
+    end
+  end
+
+  @doc """
+  Returns randomly generated domain class sample data for the given name.
+  get /sample/domains/:name
+  get /sample/domains/:extension/:name
+  """
+  swagger_path :sample_domain do
+    get("/sample/domains/{name}")
+    summary("Domain class sample data")
+
+    description(
+      "This API returns randomly generated sample data for the given domain class name. The class" <>
+        " name may contain a schema extension name. For example, \"dev/cpu_usage\"."
+    )
+
+    produces("application/json")
+    tag("Sample Data")
+
+    parameters do
+      name(:path, :string, "Domain class name", required: true)
+      profiles(:query, :array, "Related profiles to include in response.", items: [type: :string])
+    end
+
+    response(200, "Success", :Domain)
+    response(404, "Domain class <code>name</code> not found")
+  end
+
+  @spec sample_domain(Plug.Conn.t(), map()) :: Plug.Conn.t()
+  def sample_domain(conn, %{"id" => id} = params) do
+    sample_domain(conn, id, params)
+  end
+
+  defp sample_domain(conn, id, options) do
+    # TODO: honor constraints
+
+    extension = extension(options)
+    profiles = profiles(options) |> parse_options()
+
+    case Schema.domain(extension, id) do
+      nil ->
+        send_json_resp(conn, 404, %{error: "Domain class #{id} not found"})
+
+      class ->
+        class =
+          Schema.generate_class(class, profiles)
+
+        send_json_resp(conn, class)
+    end
+  end
+
+  @doc """
+  Returns randomly generated feature class sample data for the given name.
+  get /sample/features/:name
+  get /sample/features/:extension/:name
+  """
+  swagger_path :sample_feature do
+    get("/sample/features/{name}")
+    summary("Feature class sample data")
+
+    description(
+      "This API returns randomly generated sample data for the given feature class name. The class" <>
+        " name may contain a schema extension name. For example, \"dev/cpu_usage\"."
+    )
+
+    produces("application/json")
+    tag("Sample Data")
+
+    parameters do
+      name(:path, :string, "Feature class name", required: true)
+      profiles(:query, :array, "Related profiles to include in response.", items: [type: :string])
+    end
+
+    response(200, "Success")
+    response(404, "Feature class <code>name</code> not found")
+  end
+
+  @spec sample_feature(Plug.Conn.t(), map()) :: Plug.Conn.t()
+  def sample_feature(conn, %{"id" => id} = params) do
+    sample_feature(conn, id, params)
+  end
+
+  defp sample_feature(conn, id, options) do
+    # TODO: honor constraints
+
+    extension = extension(options)
+    profiles = profiles(options) |> parse_options()
+
+    case Schema.feature(extension, id) do
+      nil ->
+        send_json_resp(conn, 404, %{error: "Feature class #{id} not found"})
 
       class ->
         class =

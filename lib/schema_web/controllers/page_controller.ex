@@ -9,24 +9,6 @@ defmodule SchemaWeb.PageController do
 
   alias SchemaWeb.SchemaController
 
-  @spec class_graph(Plug.Conn.t(), any) :: Plug.Conn.t()
-  def class_graph(conn, %{"id" => id} = params) do
-    case SchemaWeb.SchemaController.class_ex(id, params) do
-      nil ->
-        send_resp(conn, 404, "Not Found: #{id}")
-
-      class ->
-        data = Schema.Graph.build(class)
-          |> Map.put(:categories_path, "categories")
-
-        render(conn, "class_graph.html",
-          extensions: Schema.extensions(),
-          profiles: SchemaController.get_profiles(params),
-          data: data
-        )
-    end
-  end
-
   @spec skill_graph(Plug.Conn.t(), any) :: Plug.Conn.t()
   def skill_graph(conn, %{"id" => id} = params) do
     case SchemaWeb.SchemaController.skill_ex(id, params) do
@@ -144,47 +126,6 @@ defmodule SchemaWeb.PageController do
     render(conn, "profiles.html",
       extensions: Schema.extensions(),
       profiles: data,
-      data: data
-    )
-  end
-
-  @doc """
-  Renders categories or the classes in a given category.
-  """
-  @spec categories(Plug.Conn.t(), map) :: Plug.Conn.t()
-  def categories(conn, %{"id" => id} = params) do
-    case SchemaController.category_classes(params) do
-      nil ->
-        send_resp(conn, 404, "Not Found: #{id}")
-
-      data ->
-        classes = sort_by(data[:classes], :uid)
-
-        data =
-          Map.put(data, :classes, classes)
-          |> Map.put(:class_type, "class")
-          |> Map.put(:classes_path, "classes")
-
-        render(conn, "category.html",
-          extensions: Schema.extensions(),
-          profiles: SchemaController.get_profiles(params),
-          data: data
-        )
-    end
-  end
-
-  def categories(conn, params) do
-    data =
-      Map.put_new(params, "extensions", "")
-      |> SchemaController.categories()
-      |> sort_attributes(:uid)
-      |> sort_classes()
-      |> Map.put(:categories_path, "categories")
-      |> Map.put(:classes_path, "classes")
-
-    render(conn, "index.html",
-      extensions: Schema.extensions(),
-      profiles: SchemaController.get_profiles(params),
       data: data
     )
   end
@@ -337,49 +278,6 @@ defmodule SchemaWeb.PageController do
   @spec base_class(Plug.Conn.t(), any) :: Plug.Conn.t()
   def base_class(conn, _params) do
     redirect(conn, to: "/classes/base_class")
-  end
-
-  @doc """
-  Renders classes.
-  """
-  @spec classes(Plug.Conn.t(), any) :: Plug.Conn.t()
-  def classes(conn, %{"id" => id} = params) do
-    extension = params["extension"]
-
-    case Schema.class(extension, id) do
-      nil ->
-        send_resp(conn, 404, "Not Found: #{id}")
-
-      data ->
-        data =
-          data
-          |> sort_attributes()
-          |> Map.put(:key, Schema.Utils.to_uid(extension, id))
-          |> Map.put(:class_type, "class")
-
-        render(conn, "class.html",
-          extensions: Schema.extensions(),
-          profiles: SchemaController.get_profiles(params),
-          data: data
-        )
-    end
-  end
-
-  def classes(conn, params) do
-    data = %{
-      classes:
-        SchemaController.classes(params)
-        |> sort_by(:uid),
-      title: "Classes",
-      description: "The OASF classes",
-      classes_path: "classes"
-    }
-
-    render(conn, "classes.html",
-      extensions: Schema.extensions(),
-      profiles: SchemaController.get_profiles(params),
-      data: data
-    )
   end
 
   @doc """
