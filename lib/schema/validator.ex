@@ -260,10 +260,10 @@ defmodule Schema.Validator do
           case Schema.feature(class_name) do
             nil ->
               {
-                add_error(
+                add_warning(
                   response,
                   "name_unknown",
-                  "Unknown \"name\" value; no class is defined for #{class_name}.",
+                  "Unknown \"name\" value; no agent extension is defined for #{class_name} in OASF.",
                   %{attribute_path: "name", attribute: "name", value: class_name}
                 ),
                 nil
@@ -286,7 +286,7 @@ defmodule Schema.Validator do
     end
   end
 
-  @spec validate_object_name_and_return_object(map(), map()) :: {map(), nil | map()}
+  @spec validate_object_name_and_return_object(map(), list()) :: {map(), nil | map()}
   defp validate_object_name_and_return_object(response, options) do
     if Keyword.has_key?(options, :name) do
       object_name = Keyword.get(options, :name)
@@ -413,7 +413,7 @@ defmodule Schema.Validator do
       nil,
       class,
       profiles,
-      Keyword.get(options, :warn_on_missing_recommended),
+      options,
       dictionary
     )
     |> validate_version(input)
@@ -695,7 +695,7 @@ defmodule Schema.Validator do
           nil | String.t(),
           map(),
           list(String.t()),
-          boolean(),
+          list(),
           map()
         ) :: map()
   defp validate_attributes(
@@ -704,7 +704,7 @@ defmodule Schema.Validator do
          parent_attribute_path,
          schema_item,
          profiles,
-         warn_on_missing_recommended,
+         options,
          dictionary
        ) do
     schema_attributes = filter_with_profiles(schema_item[:attributes], profiles)
@@ -715,7 +715,7 @@ defmodule Schema.Validator do
       parent_attribute_path,
       schema_attributes,
       profiles,
-      warn_on_missing_recommended,
+      options,
       dictionary
     )
     |> validate_attributes_unknown_keys(
@@ -735,7 +735,7 @@ defmodule Schema.Validator do
           nil | String.t(),
           list(tuple()),
           list(String.t()),
-          boolean(),
+          list(),
           map()
         ) :: map()
   defp validate_attributes_types(
@@ -744,7 +744,7 @@ defmodule Schema.Validator do
          parent_attribute_path,
          schema_attributes,
          profiles,
-         warn_on_missing_recommended,
+         options,
          dictionary
        ) do
     Enum.reduce(
@@ -762,7 +762,7 @@ defmodule Schema.Validator do
           attribute_name,
           attribute_details,
           profiles,
-          warn_on_missing_recommended,
+          options,
           dictionary
         )
       end
@@ -1210,7 +1210,7 @@ defmodule Schema.Validator do
           String.t(),
           map(),
           list(String.t()),
-          boolean(),
+          list(),
           map()
         ) :: map()
   defp validate_attribute(
@@ -1220,7 +1220,7 @@ defmodule Schema.Validator do
          attribute_name,
          attribute_details,
          profiles,
-         warn_on_missing_recommended,
+         options,
          dictionary
        ) do
     if value == nil do
@@ -1229,7 +1229,7 @@ defmodule Schema.Validator do
         attribute_path,
         attribute_name,
         attribute_details,
-        warn_on_missing_recommended
+        options
       )
     else
       response =
@@ -1253,7 +1253,7 @@ defmodule Schema.Validator do
             attribute_name,
             attribute_details,
             profiles,
-            warn_on_missing_recommended,
+            options,
             dictionary
           )
         else
@@ -1264,7 +1264,7 @@ defmodule Schema.Validator do
             attribute_name,
             attribute_details,
             profiles,
-            warn_on_missing_recommended,
+            options,
             dictionary
           )
         end
@@ -1297,14 +1297,14 @@ defmodule Schema.Validator do
          attribute_path,
          attribute_name,
          attribute_details,
-         warn_on_missing_recommended
+         options
        ) do
     case attribute_details[:requirement] do
       "required" ->
         add_error_required_attribute_missing(response, attribute_path, attribute_name)
 
       "recommended" ->
-        if warn_on_missing_recommended do
+        if Keyword.get(options, :warn_on_missing_recommended) do
           add_warning_recommended_attribute_missing(response, attribute_path, attribute_name)
         else
           response
@@ -1323,7 +1323,7 @@ defmodule Schema.Validator do
           String.t(),
           map(),
           list(String.t()),
-          boolean(),
+          list(),
           map()
         ) :: map()
   defp validate_array(
@@ -1333,7 +1333,7 @@ defmodule Schema.Validator do
          attribute_name,
          attribute_details,
          profiles,
-         warn_on_missing_recommended,
+         options,
          dictionary
        ) do
     if is_list(value) do
@@ -1350,7 +1350,7 @@ defmodule Schema.Validator do
                 attribute_name,
                 attribute_details,
                 profiles,
-                warn_on_missing_recommended,
+                options,
                 dictionary
               ),
               index + 1
@@ -1378,7 +1378,7 @@ defmodule Schema.Validator do
           String.t(),
           map(),
           list(String.t()),
-          boolean(),
+          list(),
           map()
         ) :: map()
   defp validate_value(
@@ -1388,19 +1388,71 @@ defmodule Schema.Validator do
          attribute_name,
          attribute_details,
          profiles,
-         warn_on_missing_recommended,
+         options,
          dictionary
        ) do
     attribute_type = attribute_details[:type]
 
-    if attribute_type == "object_t" do
-      # object_t is a marker added by the schema compile to make it easy to check if attribute
-      # is an OASF object (otherwise we would need to notice that the attribute type isn't a
-      # data dictionary type)
-      object_type = attribute_details[:object_type]
+    case attribute_type do
+      "class_t" ->
+        # class_t is a marker added by the schema compile to make it easy to check if attribute
+        # is an OASF class (otherwise we would need to notice that the attribute type isn't a
+        # data dictionary type)
+        {response, class} =
+          case attribute_details[:family] do
+            "skill" ->
+              validate_skill_class_uid_and_return_class(response, value)
 
-      if is_map(value) do
-        # Drill in to object
+            "domain" ->
+              validate_domain_class_uid_and_return_class(response, value)
+
+            "feature" ->
+              validate_feature_class_name_and_return_class(response, value)
+
+            _ ->
+              # This should never happen for published schemas (validator will catch this) but
+              # _could_ happen for a schema that's in development and presumably running on a
+              # local / private OASF Server instance.
+              Logger.warning(
+                "SCHEMA BUG: Class type \"#{attribute_type}\" is not defined in dictionary" <>
+                  " at attribute path \"#{attribute_path}\""
+              )
+
+              add_error(
+                response,
+                "schema_bug_class_missing",
+                "SCHEMA BUG: Class type \"#{attribute_type}\" is not defined in dictionary.",
+                %{
+                  attribute_path: attribute_path,
+                  attribute: attribute_name,
+                  type: attribute_type,
+                  value: value
+                }
+              )
+          end
+
+        if class do
+          {response, profiles} = validate_and_return_profiles(response, value)
+
+          validate_input_against_class(
+            response,
+            value,
+            class,
+            profiles,
+            options,
+            dictionary
+          )
+        else
+          # Can't continue if we can't find the class
+          response
+        end
+
+      "object_t" ->
+        # object_t is a marker added by the schema compile to make it easy to check if attribute
+        # is an OASF object (otherwise we would need to notice that the attribute type isn't a
+        # data dictionary type)
+        object_type = attribute_details[:object_type]
+
         validate_map_against_object(
           response,
           value,
@@ -1408,27 +1460,19 @@ defmodule Schema.Validator do
           attribute_name,
           Schema.object(object_type),
           profiles,
-          warn_on_missing_recommended,
+          options,
           dictionary
         )
-      else
-        add_error_wrong_type(
+
+      _ ->
+        validate_value_against_dictionary_type(
           response,
+          value,
           attribute_path,
           attribute_name,
-          value,
-          "#{object_type} (object)"
+          attribute_details,
+          dictionary
         )
-      end
-    else
-      validate_value_against_dictionary_type(
-        response,
-        value,
-        attribute_path,
-        attribute_name,
-        attribute_details,
-        dictionary
-      )
     end
   end
 
@@ -1439,7 +1483,7 @@ defmodule Schema.Validator do
           String.t(),
           map(),
           list(String.t()),
-          boolean(),
+          list(),
           map()
         ) :: map()
   defp validate_map_against_object(
@@ -1449,7 +1493,7 @@ defmodule Schema.Validator do
          attribute_name,
          schema_object,
          profiles,
-         warn_on_missing_recommended,
+         options,
          dictionary
        ) do
     response
@@ -1459,7 +1503,7 @@ defmodule Schema.Validator do
       attribute_path,
       schema_object,
       profiles,
-      warn_on_missing_recommended,
+      options,
       dictionary
     )
     |> validate_constraints(input_object, schema_object, attribute_path)
