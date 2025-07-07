@@ -56,15 +56,6 @@ spec:
                 name: {{ $fullName }}-{{ $version.schema | replace "." "-" }}
                 port:
                   number: {{ $svcPort }}
-            {{- if $version.default }}
-          - path: /
-            pathType: Prefix
-            backend:
-              service:
-                name: {{ $fullName }}-{{ $version.schema | replace "." "-" }}
-                port:
-                  number: {{ $svcPort }}
-            {{- end }}
           {{- end }}
     {{- end }}
 {{- end }}
