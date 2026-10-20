@@ -13,7 +13,7 @@ vars:
   IMAGE_REPO: '{{ .IMAGE_REPO | default "ghcr.io/agntcy" }}'
   IMAGE_TAG: '{{ .IMAGE_TAG }}'
 
-  ## Schema checkout used by tests, local deployments and image builds
+  ## Schema checkout used by tests and local deployments
   SCHEMA_DIR: '{{ .SCHEMA_DIR | default (printf "%s/../oasf/schema" .ROOT_DIR) }}'
 
   ## Dependency config
@@ -57,10 +57,8 @@ tasks:
     desc: Build OASF server container image
     vars:
       BAKE_OPTS: '{{ .BAKE_OPTS | default (printf "--set *.platform=linux/%s" ARCH) }}'
-    env:
-      SCHEMA_DIR: '{{ .SCHEMA_DIR }}'
     cmds:
-      - docker buildx bake -f docker-bake.hcl oasf-server --allow fs.read={{ .SCHEMA_DIR }} {{.BAKE_OPTS}}
+      - docker buildx bake -f docker-bake.hcl oasf-server {{.BAKE_OPTS}}
 
   up:
     desc: Deploy services in an ephemeral kind cluster
@@ -221,15 +219,56 @@ tasks:
             echo "Error: expected no extensions to be loaded, got: $extensions"
             exit 1
           fi
+      # The image must not ship a schema; the chart mounts one at /schema.
       - cmd: |
           set -eu
           pod=$({{ .KUBECTL_BIN }} get pod -l default-schema=true -o name | head -n 1)
           # Guard against a false pass if exec itself fails.
-          {{ .KUBECTL_BIN }} exec "$pod" -- test -d /app/schema
-          if {{ .KUBECTL_BIN }} exec "$pod" -- test -e /app/schema/test; then
-            echo "Error: /app/schema/test must not be present in the image"
+          {{ .KUBECTL_BIN }} exec "$pod" -- test -f /schema/version.json
+          if {{ .KUBECTL_BIN }} exec "$pod" -- test -e /app/schema; then
+            echo "Error: /app/schema must not be present in the image"
             exit 1
           fi
+
+  test:image:
+    desc: Verify the server image refuses to start without a schema and serves a mounted one
+    preconditions:
+      - which docker curl
+    vars:
+      IMAGE: '{{ .IMAGE_REPO }}/oasf-server:{{ .IMAGE_TAG | default "latest" }}'
+      PORT: '{{ .PORT | default "18080" }}'
+    cmds:
+      - cmd: |
+          set -eu
+          echo "Starting {{ .IMAGE }} without a schema..."
+          status=0
+          output=$(timeout 60 docker run --rm {{ .IMAGE }} 2>&1) || status=$?
+          if [ "$status" -eq 0 ] || [ "$status" -eq 124 ]; then
+            echo "Error: expected the server to exit with an error, got status $status"
+            echo "$output"
+            exit 1
+          fi
+          if ! echo "$output" | grep -q "No schema found in SCHEMA_DIR=/app/schema"; then
+            echo "Error: expected a clear error about the missing schema, got:"
+            echo "$output"
+            exit 1
+          fi
+          echo "OK: exited with status $status and reported the missing schema."
+      - cmd: |
+          set -eu
+          echo "Starting {{ .IMAGE }} with {{ .SCHEMA_DIR }} mounted..."
+          container=$(docker run --detach --rm -p {{ .PORT }}:8080 \
+            -v "{{ .SCHEMA_DIR }}:/app/schema:ro" {{ .IMAGE }})
+          trap 'docker rm --force "$container" > /dev/null' EXIT
+          expected=$(sed -n 's/.*"version": *"\([^"]*\)".*/\1/p' "{{ .SCHEMA_DIR }}/version.json")
+          version=$(curl --retry 20 --retry-delay 2 --retry-all-errors --fail --silent \
+            http://localhost:{{ .PORT }}/api/version)
+          if ! echo "$version" | grep -q "\"$expected\""; then
+            echo "Error: expected schema version $expected, got: $version"
+            docker logs "$container"
+            exit 1
+          fi
+          echo "OK: serving schema $expected."
 
   test:server:
     desc: Test server code (includes schema integrity, API, and unit tests)
