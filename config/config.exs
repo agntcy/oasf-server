@@ -34,7 +34,7 @@ config :schema_server, :phoenix_swagger,
 config :phoenix_swagger, json_library: Jason
 
 # Configures the location of the schema files
-config :schema_server, Schema.Application, home: System.get_env("SCHEMA_DIR") || "../schema"
+config :schema_server, Schema.Application, home: System.get_env("SCHEMA_DIR") || "../oasf/schema"
 config :schema_server, Schema.Application, extension: System.get_env("SCHEMA_EXTENSION")
 config :schema_server, Schema.Application, schema_versions: System.get_env("SCHEMA_VERSIONS")
 

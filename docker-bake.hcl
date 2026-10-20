@@ -6,6 +6,8 @@
 variable "IMAGE_REPO" {default = "ghcr.io/agntcy"}
 variable "IMAGE_TAG" {default = "latest"}
 variable "ERL_FLAGS" {default = "+JPperf true"}
+# Schema checkout that is copied into the image
+variable "SCHEMA_DIR" {default = "../oasf/schema"}
 
 function "get_tag" {
   params = [tags, name]
@@ -33,9 +35,9 @@ target "oasf-server" {
     "_common",
     "docker-metadata-action",
   ]
-  context = "./server"
+  context = "."
   contexts = {
-    schema = "./schema"
+    schema = "${SCHEMA_DIR}"
   }
   tags = get_tag(target.docker-metadata-action.tags, "${target.oasf-server.name}")
   args = {

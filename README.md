@@ -28,10 +28,9 @@ mix local.hex --force && mix local.rebar --force
 
 #### Get the Dependencies
 
-Change to the server directory, fetch, and compile the dependencies:
+Fetch and compile the dependencies:
 
 ```shell
-cd server
 mix do deps.get, deps.compile
 ```
 
@@ -48,7 +47,7 @@ For example, to ensure the JSON files are correct or the attributes are defined,
 with this command:
 
 ```shell
-SCHEMA_DIR=../schema SCHEMA_EXTENSION=test/extensions mix test
+SCHEMA_DIR=../oasf/schema SCHEMA_EXTENSION=test/extensions mix test
 ```
 
 If everything is correct, then you should not see any errors or warnings.
@@ -62,8 +61,9 @@ You can use the Elixir's interactive shell,
 iex -S mix phx.server
 ```
 
-In the `dev` environment `SCHEMA_DIR` defaults to `../schema` and `SCHEMA_EXTENSION`
-defaults to `test/extensions`, which holds the [example extension](../schema/test/extensions/example).
+In the `dev` environment `SCHEMA_DIR` defaults to `../oasf/schema`, a checkout of
+[agntcy/oasf](https://github.com/agntcy/oasf) next to this repository, and `SCHEMA_EXTENSION`
+defaults to `test/extensions`, which holds the [example extension](https://github.com/agntcy/oasf/tree/main/schema/test/extensions/example).
 Set `SCHEMA_EXTENSION=""` to run without extensions, or point it at your own extensions.
 
 Now you can access the Schema server at
@@ -113,10 +113,10 @@ The schema server uses a number of environment variables.
 | ---------------- | ----------------------------------------------------------------------------------------- |
 | HTTP_PORT        | The server HTTP port number, default: `8080`                                              |
 | LOG_LEVEL        | Logger level (`debug`, `info`, `warning`, `error`), default: `warning`                    |
-| SCHEMA_DIR       | The directory containing the schema, default: `../schema`                                 |
+| SCHEMA_DIR       | The directory containing the schema, default: `../oasf/schema`                            |
 | SCHEMA_EXTENSION | Comma-separated extension directories, relative to SCHEMA_DIR or absolute; blank for none |
 | RELEASE_NODE     | The Erlang node name. Set it if you want to run more than one server on the same computer |
 
 ```shell
-SCHEMA_DIR=../schema SCHEMA_EXTENSION=extensions iex -S mix phx.server
+SCHEMA_DIR=../oasf/schema SCHEMA_EXTENSION=extensions iex -S mix phx.server
 ```

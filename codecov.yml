@@ -27,5 +27,5 @@ coverage:
     changes: false
 
 ignore:
-  - "server/test/**"
+  - "test/**"
   - "**/testdata/**"

@@ -36,14 +36,12 @@ jobs:
           otp-version: "28"
 
       - name: Fetch Elixir deps
-        working-directory: server
         run: mix deps.get
 
       # Compile first. Sobelow writes its report to stdout, and any build or
       # lock-mismatch output mix emits on the same stream would be redirected
       # into the file and corrupt the SARIF.
       - name: Compile
-        working-directory: server
         run: mix compile
 
       # --skip honours the `# sobelow_skip` annotations in the source. Each one
@@ -60,8 +58,7 @@ jobs:
       #
       # Config.CSP is deliberately NOT ignored: it is a real gap.
       - name: Run Sobelow
-        working-directory: server
-        run: mix sobelow --format sarif --skip -i XSS.Raw,Config.HTTPS > ../sobelow.sarif
+        run: mix sobelow --format sarif --skip -i XSS.Raw,Config.HTTPS > sobelow.sarif
 
       - name: Check the report is valid SARIF
         run: python3 -c "import json,sys; json.load(open('sobelow.sarif'))"

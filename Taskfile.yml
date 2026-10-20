@@ -13,6 +13,9 @@ vars:
   IMAGE_REPO: '{{ .IMAGE_REPO | default "ghcr.io/agntcy" }}'
   IMAGE_TAG: '{{ .IMAGE_TAG }}'
 
+  ## Schema checkout used by tests, local deployments and image builds
+  SCHEMA_DIR: '{{ .SCHEMA_DIR | default (printf "%s/../oasf/schema" .ROOT_DIR) }}'
+
   ## Dependency config
   BIN_DIR: '{{ .ROOT_DIR }}/bin'
   HELM_VERSION: '3.16.3'
@@ -54,8 +57,10 @@ tasks:
     desc: Build OASF server container image
     vars:
       BAKE_OPTS: '{{ .BAKE_OPTS | default (printf "--set *.platform=linux/%s" ARCH) }}'
+    env:
+      SCHEMA_DIR: '{{ .SCHEMA_DIR }}'
     cmds:
-      - docker buildx bake -f docker-bake.hcl oasf-server {{.BAKE_OPTS}}
+      - docker buildx bake -f docker-bake.hcl oasf-server --allow fs.read={{ .SCHEMA_DIR }} {{.BAKE_OPTS}}
 
   up:
     desc: Deploy services in an ephemeral kind cluster
@@ -88,7 +93,7 @@ tasks:
         nodes:
           - role: control-plane
             extraMounts:
-              - hostPath: {{ .ROOT_DIR }}/schema
+              - hostPath: {{ .SCHEMA_DIR }}
                 containerPath: /schema
             kubeadmConfigPatches:
             - |
@@ -172,7 +177,7 @@ tasks:
     deps:
       - deps:kubectl
     sources:
-      - 'schema/**/*'
+      - '{{ .SCHEMA_DIR }}/**/*'
     vars:
       LABEL_SELECTOR: 'default-schema=true'
     preconditions:
@@ -230,7 +235,9 @@ tasks:
     desc: Test server code (includes schema integrity, API, and unit tests)
     preconditions:
       - which mix
-    dir: '{{ .ROOT_DIR }}/server'
+    dir: '{{ .ROOT_DIR }}'
+    env:
+      SCHEMA_DIR: '{{ .SCHEMA_DIR }}'
     cmds:
       - cmd: echo "Running OASF server test suite..."
       - cmd: mix test
@@ -239,9 +246,9 @@ tasks:
     desc: Test server code with the example extension loaded
     preconditions:
       - which mix
-    dir: '{{ .ROOT_DIR }}/server'
+    dir: '{{ .ROOT_DIR }}'
     env:
-      SCHEMA_DIR: '{{ .ROOT_DIR }}/schema'
+      SCHEMA_DIR: '{{ .SCHEMA_DIR }}'
       SCHEMA_EXTENSION: test/extensions
     cmds:
       - cmd: echo "Running OASF server test suite with the example extension loaded..."
@@ -269,8 +276,8 @@ tasks:
       - task: fmt:elixir
 
   fmt:elixir:
-    desc: Run Elixir formatter on server/
-    dir: ./server
+    desc: Run the Elixir formatter
+    dir: '{{ .ROOT_DIR }}'
     cmds:
       - |
         if ! command -v mix >/dev/null 2>&1; then

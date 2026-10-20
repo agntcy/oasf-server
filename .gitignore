@@ -46,3 +46,16 @@ erl_crash.dump
 priv/static/swagger.json
 
 /log
+
+# Task binaries and state
+/bin/
+/.task/
+
+# Schema checkout used in CI
+/.oasf/
+
+# OS and editor files
+.DS_Store
+
+# Node
+node_modules/
