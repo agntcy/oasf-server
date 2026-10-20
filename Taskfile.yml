@@ -13,8 +13,13 @@ vars:
   IMAGE_REPO: '{{ .IMAGE_REPO | default "ghcr.io/agntcy" }}'
   IMAGE_TAG: '{{ .IMAGE_TAG }}'
 
-  ## Schema checkout used by tests and local deployments
-  SCHEMA_DIR: '{{ .SCHEMA_DIR | default (printf "%s/../oasf/schema" .ROOT_DIR) }}'
+  ## Supported schema versions. Tests and local deployments use the default one,
+  ## downloaded into .schemas/<tag>, unless SCHEMA_DIR points at another schema.
+  SCHEMA_VERSIONS_FILE: '{{ .ROOT_DIR }}/schema-versions.json'
+  SCHEMA_CACHE_DIR: '{{ .ROOT_DIR }}/.schemas'
+  DEFAULT_SCHEMA_TAG:
+    sh: jq -er '[.versions[] | select(.default)] | if length == 1 then .[0].tag else error("schema-versions.json needs exactly one default") end' '{{ .ROOT_DIR }}/schema-versions.json'
+  SCHEMA_DIR: '{{ .SCHEMA_DIR | default (printf "%s/.schemas/%s" .ROOT_DIR .DEFAULT_SCHEMA_TAG) }}'
 
   ## Dependency config
   BIN_DIR: '{{ .ROOT_DIR }}/bin'
@@ -68,6 +73,8 @@ tasks:
       - deps:helm
       - deps:kubectl
       - deps:kind
+      - task: schema:fetch
+        vars: {TAG: '{{ .DEFAULT_SCHEMA_TAG }}'}
     vars:
       # Kind args
       KIND_CLUSTER_NAME: '{{ .KIND_CLUSTER_NAME | default "test-oasf-cluster" }}'
@@ -234,6 +241,9 @@ tasks:
     desc: Verify the server image refuses to start without a schema and serves a mounted one
     preconditions:
       - which docker curl
+    deps:
+      - task: schema:fetch
+        vars: {TAG: '{{ .DEFAULT_SCHEMA_TAG }}'}
     vars:
       IMAGE: '{{ .IMAGE_REPO }}/oasf-server:{{ .IMAGE_TAG | default "latest" }}'
       PORT: '{{ .PORT | default "18080" }}'
@@ -270,10 +280,65 @@ tasks:
           fi
           echo "OK: serving schema $expected."
 
+  test:smoke:
+    desc: Boot the server image with one supported schema version (TAG, default the default version) and smoke-test it
+    preconditions:
+      - which docker curl jq
+    vars:
+      TAG: '{{ .TAG | default .DEFAULT_SCHEMA_TAG }}'
+      SCHEMA_VERSION:
+        sh: jq -er --arg tag '{{ .TAG | default .DEFAULT_SCHEMA_TAG }}' '.versions[] | select(.tag == $tag) | .schema' '{{ .SCHEMA_VERSIONS_FILE }}'
+      IMAGE: '{{ .IMAGE_REPO }}/oasf-server:{{ .IMAGE_TAG | default "latest" }}'
+      PORT: '{{ .PORT | default "18081" }}'
+    deps:
+      - task: schema:fetch
+        vars: {TAG: '{{ .TAG }}'}
+    cmds:
+      - cmd: |
+          set -eu
+          container=$(docker run --detach --rm -p {{ .PORT }}:8080 \
+            -v "{{ .SCHEMA_CACHE_DIR }}/{{ .TAG }}:/app/schema:ro" {{ .IMAGE }})
+          trap 'docker rm --force "$container" > /dev/null' EXIT
+          if ! {{ .ROOT_DIR }}/scripts/smoke-test.sh http://localhost:{{ .PORT }} {{ .SCHEMA_VERSION }}; then
+            docker logs "$container" | tail -n 50
+            exit 1
+          fi
+
+  test:smoke:all:
+    desc: Run test:smoke for every supported schema version
+    vars:
+      TAGS:
+        sh: jq -r '.versions[].tag' '{{ .SCHEMA_VERSIONS_FILE }}'
+    cmds:
+      - for: {var: TAGS}
+        task: test:smoke
+        vars: {TAG: '{{ .ITEM }}'}
+
+  schema:fetch:
+    desc: Download the schema of an agntcy/oasf tag (TAG) into .schemas/<tag>
+    requires:
+      vars: [TAG]
+    status:
+      - test -f '{{ .SCHEMA_CACHE_DIR }}/{{ .TAG }}/version.json'
+    cmds:
+      - cmd: |
+          set -eu
+          tmp=$(mktemp -d)
+          trap 'rm -rf "$tmp"' EXIT
+          curl --fail --silent --show-error --location \
+            "https://codeload.github.com/agntcy/oasf/tar.gz/refs/tags/{{ .TAG }}" | tar -xz -C "$tmp"
+          mkdir -p '{{ .SCHEMA_CACHE_DIR }}'
+          rm -rf '{{ .SCHEMA_CACHE_DIR }}/{{ .TAG }}'
+          mv "$tmp"/*/schema '{{ .SCHEMA_CACHE_DIR }}/{{ .TAG }}'
+          echo "Fetched the {{ .TAG }} schema into {{ .SCHEMA_CACHE_DIR }}/{{ .TAG }}"
+
   test:server:
     desc: Test server code (includes schema integrity, API, and unit tests)
     preconditions:
       - which mix
+    deps:
+      - task: schema:fetch
+        vars: {TAG: '{{ .DEFAULT_SCHEMA_TAG }}'}
     dir: '{{ .ROOT_DIR }}'
     env:
       SCHEMA_DIR: '{{ .SCHEMA_DIR }}'
@@ -285,6 +350,9 @@ tasks:
     desc: Test server code with the example extension loaded
     preconditions:
       - which mix
+    deps:
+      - task: schema:fetch
+        vars: {TAG: '{{ .DEFAULT_SCHEMA_TAG }}'}
     dir: '{{ .ROOT_DIR }}'
     env:
       SCHEMA_DIR: '{{ .SCHEMA_DIR }}'
