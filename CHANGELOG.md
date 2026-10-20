@@ -13,3 +13,7 @@ Releases up to `v1.x` shipped the server bundled with a schema from [agntcy/oasf
 - **BREAKING:** the server image no longer contains a schema. Mount one at `SCHEMA_DIR` (`/app/schema` in the image), from a host directory or an `oasf-schema` image.
 - **BREAKING:** the server refuses to start, with a clear error and a non-zero exit status, when `SCHEMA_DIR` has no `version.json`.
 - The server is versioned independently of the schema, starting at `2.0.0`.
+
+### Fixed
+
+- Cap the BEAM port table at 65536 with `+Q`, so the server's memory no longer grows with the runtime's open-file limit.
