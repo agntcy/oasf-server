@@ -27,6 +27,5 @@ coverage:
     changes: false
 
 ignore:
-  - "proto/**"
   - "server/test/**"
   - "**/testdata/**"

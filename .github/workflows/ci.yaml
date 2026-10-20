@@ -200,12 +200,6 @@ jobs:
         run: mix deps.get
         working-directory: server
 
-      - name: Validate schema files against metaschemas
-        run: task test:schema
-
-      - name: Checking consistency between json and proto files
-        run: task test:proto
-
       - name: OASF Server Validation
         run: task test:server
 

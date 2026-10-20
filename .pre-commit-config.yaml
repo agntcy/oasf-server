@@ -3,7 +3,7 @@ repos:
     hooks:
       - id: fmt
         name: fmt
-        description: Run task fmt to format proto, schema, and Elixir files.
+        description: Run task fmt to format Elixir files.
         entry: task fmt
         language: system
         pass_filenames: false
