@@ -67,12 +67,19 @@ defmodule Schema.Application do
   def check_schema_dir(dir) do
     version_file = dir |> Path.expand() |> Path.join("version.json")
 
-    if File.regular?(version_file) do
-      :ok
-    else
-      {:error,
-       "No schema found in SCHEMA_DIR=#{dir}: #{version_file} does not exist. " <>
-         "Mount an OASF schema there, for example with -v $PWD/schema:#{dir}:ro."}
+    cond do
+      File.regular?(version_file) ->
+        :ok
+
+      Path.type(dir) == :absolute ->
+        {:error,
+         "No schema found in SCHEMA_DIR=#{dir}: #{version_file} does not exist. " <>
+           "Mount an OASF schema there, for example with -v $PWD/schema:#{dir}:ro."}
+
+      true ->
+        {:error,
+         "No schema found in SCHEMA_DIR=#{dir}: #{version_file} does not exist. " <>
+           "Point SCHEMA_DIR at an OASF schema directory."}
     end
   end
 

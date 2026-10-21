@@ -45,6 +45,15 @@ defmodule Schema.ApplicationTest do
       assert {:error, _} = Application.check_schema_dir(Path.join(dir, "missing"))
     end
 
+    test "suggests a mount only for an absolute SCHEMA_DIR" do
+      assert {:error, absolute} = Application.check_schema_dir("/nonexistent/schema")
+      assert absolute =~ "-v $PWD/schema:/nonexistent/schema:ro"
+
+      assert {:error, relative} = Application.check_schema_dir("nonexistent/schema")
+      assert relative =~ "Point SCHEMA_DIR at an OASF schema directory."
+      refute relative =~ "-v "
+    end
+
     test "rejects an unset SCHEMA_DIR" do
       assert {:error, "SCHEMA_DIR is not set" <> _} = Application.check_schema_dir(nil)
       assert {:error, "SCHEMA_DIR is not set" <> _} = Application.check_schema_dir("")
