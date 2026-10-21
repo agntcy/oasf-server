@@ -1,0 +1,51 @@
+# Copyright AGNTCY Contributors (https://github.com/agntcy)
+# SPDX-License-Identifier: Apache-2.0
+
+# Early warning for schema changes on agntcy/oasf main that the server does not
+# handle yet. CI only tests the released schema versions in schema-versions.json.
+name: Schema main
+
+on:
+  schedule:
+    - cron: "0 4 * * *" # Daily at 04:00 UTC
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    name: Test against agntcy/oasf@main
+    runs-on: ubuntu-latest
+    env:
+      SCHEMA_DIR: ${{ github.workspace }}/.oasf/schema
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@d632683dd7b4114ad314bca15554477dd762a938 # v4.2.0
+
+      - name: Checkout schema
+        uses: actions/checkout@d632683dd7b4114ad314bca15554477dd762a938 # v4.2.0
+        with:
+          repository: agntcy/oasf
+          ref: main
+          path: .oasf
+          sparse-checkout: schema
+          persist-credentials: false
+
+      - name: Install Task
+        uses: go-task/setup-task@01a4adf9db2d14c1de7a560f09170b6e0df736aa # v2.1.0
+
+      - name: Set up Elixir
+        uses: erlef/setup-beam@8251c48667b97e88a0a24ec512f5b72a039fcea7 # v1
+        with:
+          elixir-version: "1.19"
+          otp-version: "28"
+
+      - name: Fetch Elixir deps
+        run: mix deps.get
+
+      - name: OASF Server Validation
+        run: task test:server
+
+      - name: OASF Server Validation with extensions loaded
+        run: task test:server:extensions
