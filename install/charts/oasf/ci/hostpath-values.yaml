@@ -1,0 +1,12 @@
+# Copyright AGNTCY Contributors (https://github.com/agntcy)
+# SPDX-License-Identifier: Apache-2.0
+
+# Local development: one schema version served from a node directory.
+localDeploy: true
+schema:
+  versions:
+    - schema: 1.2.0-dev
+      hostPath: /schema
+ingress:
+  enabled: true
+  className: nginx

@@ -1,0 +1,42 @@
+suite: ingress
+templates:
+  - ingress/ingress-api.yaml
+  - ingress/ingress-default.yaml
+release:
+  name: oasf
+values:
+  - values/versions.yaml
+set:
+  ingress.enabled: true
+tests:
+  - it: routes each versioned API path and the unversioned API to the default version
+    template: ingress/ingress-api.yaml
+    asserts:
+      - equal:
+          path: spec.rules[0].http.paths[0]
+          value:
+            path: /api/1.1.0(/|$)(.*)
+            pathType: ImplementationSpecific
+            backend: {service: {name: oasf-1-1-0, port: {number: 8080}}}
+      - equal:
+          path: spec.rules[0].http.paths[1].backend.service.name
+          value: oasf-1-1-0
+      - equal:
+          path: spec.rules[0].http.paths[2]
+          value:
+            path: /api/1.0.0(/|$)(.*)
+            pathType: ImplementationSpecific
+            backend: {service: {name: oasf-1-0-0, port: {number: 8080}}}
+      - lengthEqual:
+          path: spec.rules[0].http.paths
+          count: 3
+
+  - it: sends the root path to the default version
+    template: ingress/ingress-default.yaml
+    asserts:
+      - lengthEqual:
+          path: spec.rules[0].http.paths
+          count: 1
+      - equal:
+          path: spec.rules[0].http.paths[0].backend.service.name
+          value: oasf-1-1-0
