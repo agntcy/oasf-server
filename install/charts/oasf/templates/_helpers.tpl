@@ -207,9 +207,29 @@ Usage: include with dict {"root": $, "version": $version}
 {{- end }}
 
 {{/*
-Name of the resources for one schema version, e.g. oasf-1-1-0.
+Name of the resources for one schema version, e.g. oasf-1-1-0. A long fullname
+is shortened rather than the version suffix, so versions never share a name.
 Usage: include with dict {"root": $, "version": $version}
 */}}
 {{- define "chart.version.fullname" -}}
-{{- printf "%s-%s" (include "chart.fullname" .root) (toString .version.schema | replace "." "-") | trunc 63 | trimSuffix "-" -}}
+{{- $suffix := toString .version.schema | replace "." "-" -}}
+{{- $prefix := include "chart.fullname" .root | trunc (int (sub 62 (len $suffix))) | trimSuffix "-" -}}
+{{- printf "%s-%s" $prefix $suffix -}}
+{{- end }}
+
+{{/*
+The versions ConfigMap's JSON: every version with its server version, and which
+one is the default. The server reads it as SCHEMA_VERSIONS for /api/versions.
+*/}}
+{{- define "chart.schema.versionsJson" -}}
+{{- $default := include "chart.schema.default" . }}
+{{- $versions := list }}
+{{- range $version := $.Values.schema.versions }}
+{{- $entry := dict "schema_version" (toString $version.schema) "server_version" (include "chart.server.tag" (dict "root" $ "version" $version)) "default" (eq (toString $version.schema) $default) }}
+{{- with $version.api }}
+{{- $_ := set $entry "api_version" (toString .) }}
+{{- end }}
+{{- $versions = append $versions $entry }}
+{{- end }}
+{{- dict "versions" $versions | toJson -}}
 {{- end }}
