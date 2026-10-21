@@ -233,7 +233,8 @@ tasks:
     vars:
       HELM_UNITTEST_IMAGE: 'helmunittest/helm-unittest:3.19.0-1.0.3@sha256:4684b7cf1e1a20ce3ff2cbfcceda36566d862d6024fa23684955d10ef6d51ab1'
     cmds:
-      - docker run --rm -v "{{ .ROOT_DIR }}/install/charts:/apps" {{ .HELM_UNITTEST_IMAGE }} oasf
+      # Run as the current user, so the plugin can write to the checkout.
+      - docker run --rm --user "$(id -u):$(id -g)" -e HOME=/tmp -v "{{ .ROOT_DIR }}/install/charts:/apps" {{ .HELM_UNITTEST_IMAGE }} oasf
 
   test:e2e:
     desc: Deploy every supported schema version, plus one with a missing schema image, to kind and check them (MOUNT=initContainer|imageVolume)
