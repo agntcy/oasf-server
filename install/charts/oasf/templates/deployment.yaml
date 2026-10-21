@@ -13,7 +13,11 @@ silently drops the volume and its mount: the pod starts without a schema.
 {{- if and (eq $mount "imageVolume") (not .Values.schema.imageVolume.skipVersionCheck) (not (semverCompare ">=1.35-0" .Capabilities.KubeVersion.Version)) }}
 {{- fail (printf "schema.mount=imageVolume needs Kubernetes 1.35 or later, this cluster is %s. Use schema.mount=initContainer, or set schema.imageVolume.skipVersionCheck=true if the ImageVolume feature gate is enabled." .Capabilities.KubeVersion.Version) }}
 {{- end }}
-{{- $versionsHash := sha256sum (toYaml .Values.schema.versions) }}
+{{- /*
+Restart every instance when the versions ConfigMap changes, since SCHEMA_VERSIONS
+is only read at startup. It also depends on image.tag, not just schema.versions.
+*/}}
+{{- $versionsHash := include "chart.schema.versionsJson" . | sha256sum }}
 {{- range $version := .Values.schema.versions }}
 {{- $schema := toString $version.schema }}
 {{- $isDefault := eq $schema $default }}

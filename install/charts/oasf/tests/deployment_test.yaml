@@ -171,3 +171,18 @@ tests:
       - contains:
           path: spec.template.spec.containers[0].volumeMounts
           content: {name: tmp, mountPath: /tmp}
+
+  - it: keeps the version suffix when shortening a long fullname
+    set:
+      fullnameOverride: oasf-a-very-long-release-name-that-fills-the-whole-63-chars-limit
+    asserts:
+      - hasDocuments:
+          count: 2
+      - equal:
+          path: metadata.name
+          value: oasf-a-very-long-release-name-that-fills-the-whole-63-cha-1-1-0
+        documentSelector: {path: metadata.labels.schema-version, value: "1.1.0"}
+      - equal:
+          path: metadata.name
+          value: oasf-a-very-long-release-name-that-fills-the-whole-63-cha-1-0-0
+        documentSelector: {path: metadata.labels.schema-version, value: "1.0.0"}
