@@ -59,13 +59,22 @@ for path in / /skills /domains /modules /objects /profiles /dictionary /data_typ
   get "$path"
 done
 
-for profile in $(curl --silent --fail "$base/api/profiles" | jq -r 'keys[]'); do
+# Names in a catalog endpoint. Assigned before looping over them, because a failed
+# command substitution in a for list does not trip set -e.
+names() {
+  curl --silent --fail "$base$1" | jq -r 'keys[]'
+}
+
+profiles=$(names /api/profiles) || fail "could not list /api/profiles"
+for profile in $profiles; do
   get "/api/profiles/$profile"
 done
 
 for kind in skills domains modules objects; do
   singular=${kind%s}
-  for name in $(curl --silent --fail "$base/api/$kind" | jq -r 'keys[]'); do
+  list=$(names "/api/$kind") || { fail "could not list /api/$kind"; continue; }
+  [ -n "$list" ] || fail "/api/$kind is empty"
+  for name in $list; do
     get "/$kind/$name"
     get "/schema/$kind/$name"
     if [ "$kind" = objects ]; then
