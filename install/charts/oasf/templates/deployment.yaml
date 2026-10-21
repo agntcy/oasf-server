@@ -1,18 +1,33 @@
 # Copyright AGNTCY Contributors (https://github.com/agntcy)
 # SPDX-License-Identifier: Apache-2.0
 
-{{- range $index, $version := .Values.image.versions }}
-{{- $versionsHash := sha256sum (toYaml $.Values.image.versions) }}
+{{- $default := include "chart.schema.default" . }}
+{{- $mount := .Values.schema.mount }}
+{{- if not (has $mount (list "initContainer" "imageVolume")) }}
+{{- fail (printf "schema.mount must be initContainer or imageVolume, got %s" $mount) }}
+{{- end }}
+{{- /*
+Below 1.35 the ImageVolume feature gate is off by default, and the API server then
+silently drops the volume and its mount: the pod starts without a schema.
+*/}}
+{{- if and (eq $mount "imageVolume") (not .Values.schema.imageVolume.skipVersionCheck) (not (semverCompare ">=1.35-0" .Capabilities.KubeVersion.Version)) }}
+{{- fail (printf "schema.mount=imageVolume needs Kubernetes 1.35 or later, this cluster is %s. Use schema.mount=initContainer, or set schema.imageVolume.skipVersionCheck=true if the ImageVolume feature gate is enabled." .Capabilities.KubeVersion.Version) }}
+{{- end }}
+{{- $versionsHash := sha256sum (toYaml .Values.schema.versions) }}
+{{- range $version := .Values.schema.versions }}
+{{- $schema := toString $version.schema }}
+{{- $isDefault := eq $schema $default }}
+{{- $useImage := not $version.hostPath }}
 ---
 
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: {{ include "chart.fullname" $ }}-{{ $version.schema | replace "." "-" }}
+  name: {{ include "chart.version.fullname" (dict "root" $ "version" $version) }}
   labels:
     {{- include "chart.labels" $ | nindent 4 }}
-    schema-version: {{ $version.schema }}
-    {{- if $version.default }}
+    schema-version: {{ $schema | quote }}
+    {{- if $isDefault }}
     default-schema: "true"
     {{- end }}
 spec:
@@ -20,7 +35,7 @@ spec:
   selector:
     matchLabels:
       {{- include "chart.selectorLabels" $ | nindent 6 }}
-      schema-version: {{ $version.schema }}
+      schema-version: {{ $schema | quote }}
   template:
     metadata:
       annotations:
@@ -30,8 +45,8 @@ spec:
       {{- end }}
       labels:
         {{- include "chart.selectorLabels" $ | nindent 8 }}
-        schema-version: {{ $version.schema }}
-        {{- if $version.default }}
+        schema-version: {{ $schema | quote }}
+        {{- if $isDefault }}
         default-schema: "true"
         {{- end }}
     spec:
@@ -42,24 +57,40 @@ spec:
       serviceAccountName: {{ include "chart.serviceAccountName" $ }}
       securityContext:
         {{- toYaml $.Values.podSecurityContext | nindent 8 }}
+      {{- if and $useImage (eq $mount "initContainer") }}
+      initContainers:
+        - name: schema
+          image: {{ include "chart.schema.image" (dict "root" $ "version" $version) | quote }}
+          imagePullPolicy: {{ $.Values.schema.image.pullPolicy }}
+          command: ["cp", "-R", "/schema/.", "/work/"]
+          securityContext:
+            {{- toYaml $.Values.securityContext | nindent 12 }}
+          resources:
+            {{- toYaml $.Values.schema.initContainer.resources | nindent 12 }}
+          volumeMounts:
+            - name: schema
+              mountPath: /work
+      {{- end }}
       containers:
         - name: {{ $.Chart.Name }}
           securityContext:
             {{- toYaml $.Values.securityContext | nindent 12 }}
-          image: "{{ $.Values.image.repository }}:{{ $version.server }}"
+          image: {{ include "chart.server.image" (dict "root" $ "version" $version) | quote }}
           imagePullPolicy: {{ $.Values.image.pullPolicy }}
           env:
           {{- range $key, $value := $.Values.env }}
             - name: {{ $key }}
               value: {{ $value | quote }}
           {{- end }}
+            - name: SCHEMA_DIR
+              value: /app/schema
             - name: SCHEMA_VERSIONS
               valueFrom:
                 configMapKeyRef:
                   name: {{ $.Release.Name }}-schema-versions
                   key: versions
             - name: SCHEMA_PATH
-              value: /{{ $version.schema }}
+              value: /{{ $schema }}
           ports:
             - name: http
               containerPort: {{ $.Values.config.server_port }}
@@ -75,6 +106,14 @@ spec:
           resources:
             {{- toYaml $.Values.resources | nindent 12 }}
           volumeMounts:
+            - name: schema
+              mountPath: /app/schema
+              readOnly: true
+              {{- if and $useImage (eq $mount "imageVolume") }}
+              subPath: schema
+              {{- end }}
+            - name: tmp
+              mountPath: /tmp
             {{- with $.Values.volumeMounts }}
             {{- toYaml . | nindent 12 }}
             {{- end }}
@@ -85,6 +124,20 @@ spec:
       affinity:
         {{- toYaml $.Values.affinity | nindent 8 }}
       volumes:
+        - name: schema
+          {{- if not $useImage }}
+          hostPath:
+            path: {{ $version.hostPath }}
+            type: Directory
+          {{- else if eq $mount "imageVolume" }}
+          image:
+            reference: {{ include "chart.schema.image" (dict "root" $ "version" $version) | quote }}
+            pullPolicy: {{ $.Values.schema.image.pullPolicy }}
+          {{- else }}
+          emptyDir: {}
+          {{- end }}
+        - name: tmp
+          emptyDir: {}
         {{- with $.Values.volumes }}
         {{- toYaml . | nindent 8 }}
         {{- end }}

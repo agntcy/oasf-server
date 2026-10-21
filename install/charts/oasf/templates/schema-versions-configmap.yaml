@@ -1,17 +1,20 @@
 # Copyright AGNTCY Contributors (https://github.com/agntcy)
 # SPDX-License-Identifier: Apache-2.0
 
+{{- $default := include "chart.schema.default" . }}
+{{- $versions := list }}
+{{- range $version := .Values.schema.versions }}
+{{- $entry := dict "schema_version" (toString $version.schema) "server_version" (include "chart.server.tag" (dict "root" $ "version" $version)) "default" (eq (toString $version.schema) $default) }}
+{{- with $version.api }}
+{{- $_ := set $entry "api_version" (toString .) }}
+{{- end }}
+{{- $versions = append $versions $entry }}
+{{- end }}
 apiVersion: v1
 kind: ConfigMap
 metadata:
   name: {{ .Release.Name }}-schema-versions
   labels:
-    app: {{ .Chart.Name }}
+    {{- include "chart.labels" . | nindent 4 }}
 data:
-  versions: |-
-    {"versions":[
-      {{- range $index, $version := .Values.image.versions -}}
-      {{- if $index }},{{ end }}
-      {"schema_version":"{{ $version.schema }}","server_version":"{{ $version.server }}","api_version":"{{ default $version.server $version.api }}","default":{{ if $version.default }}true{{ else }}false{{ end }}}
-      {{- end -}}
-    ]}
+  versions: {{ dict "versions" $versions | toJson | quote }}

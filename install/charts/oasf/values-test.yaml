@@ -1,16 +1,20 @@
 # Copyright AGNTCY Contributors (https://github.com/agntcy)
 # SPDX-License-Identifier: Apache-2.0
 
+# Values for local kind deployments (task up, task test:e2e). The schema
+# versions are set on the command line: task up serves SCHEMA_DIR from the
+# node, task test:e2e every version in schema-versions.json.
+
 localDeploy: true
 
 image:
   repository: ghcr.io/agntcy/oasf-server
-  versions:
-    - server: latest
-      schema: 1.2.0-dev
-      api: v0.6.0
-      default: true
+  tag: latest
   pullPolicy: IfNotPresent
+
+schema:
+  image:
+    pullPolicy: IfNotPresent
 
 ingress:
   enabled: true
@@ -27,15 +31,4 @@ service:
 env:
   HOST: localhost
   URL_PORT: 8080
-  SCHEMA_DIR: /schema
   LOG_LEVEL: info
-
-volumes:
-  - name: schema
-    hostPath:
-      path: /schema
-      type: Directory
-
-volumeMounts:
-  - name: schema
-    mountPath: /schema

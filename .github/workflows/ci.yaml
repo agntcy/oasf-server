@@ -60,6 +60,9 @@ jobs:
       - name: Linting
         run: task lint
 
+      - name: Chart unit tests
+        run: task test:charts
+
   prepare:
     name: Prepare
     needs:
@@ -192,13 +195,6 @@ jobs:
         run: |
           task test:image
 
-      - name: Run e2e tests
-        env:
-          IMAGE_REPO: ghcr.io/agntcy
-          IMAGE_TAG: ${{ needs.prepare.outputs.image_tag }}
-        run: |
-          task test:e2e
-
       - name: Set up Elixir
         uses: erlef/setup-beam@8251c48667b97e88a0a24ec512f5b72a039fcea7 # v1
         with:
@@ -261,6 +257,49 @@ jobs:
           SCHEMA: ${{ matrix.schema }}
         run: task test:smoke SCHEMA="$SCHEMA"
 
+  e2e:
+    name: E2E (${{ matrix.mount }})
+    if: ${{ !startsWith(github.ref, 'refs/tags/helm/') }}
+    needs:
+      - prepare
+      - build
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        mount: [initContainer, imageVolume]
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@d632683dd7b4114ad314bca15554477dd762a938 # v4.2.0
+
+      - name: Install Task
+        uses: go-task/setup-task@01a4adf9db2d14c1de7a560f09170b6e0df736aa # v2.1.0
+
+      - name: Set up Go
+        uses: actions/setup-go@d35c59abb061a4a6fb18e82ac0862c26744d6ab5 # v5.5.0
+        with:
+          go-version: stable
+
+      - name: Download artifacts
+        uses: actions/download-artifact@cc203385981b70ca67e1cc392babf9cc229d5806 # v4.1.9
+        with:
+          name: artifacts-${{ needs.prepare.outputs.image_tag }}
+          path: artifacts
+          pattern: "*.tar"
+          merge-multiple: true
+
+      - name: Load image
+        run: docker load --input artifacts/oasf-server-amd64.tar
+
+      # Deploys every version in schema-versions.json from its oasf-schema
+      # image, plus one whose image is missing, and checks them all.
+      - name: Run e2e tests
+        env:
+          IMAGE_REPO: ghcr.io/agntcy
+          IMAGE_TAG: ${{ needs.prepare.outputs.image_tag }}
+          MOUNT: ${{ matrix.mount }}
+        run: task test:e2e MOUNT="$MOUNT"
+
   # The released image is only rebuilt on a v* tag, so ghcr `latest` can sit
   # months behind main and the nightly Trivy scan reports a state nobody is
   # working on any more. Publish every merge to main as `main` so there is an
@@ -279,6 +318,7 @@ jobs:
       - build
       - test
       - smoke
+      - e2e
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -368,6 +408,7 @@ jobs:
       - build
       - test
       - smoke
+      - e2e
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -501,31 +542,32 @@ jobs:
       - name: Setup Helm
         uses: azure/setup-helm@fe7b79cd5ee1e45176fcad797de68ecaf3ca4814 # v4.2.0
         with:
-          version: "3.12.1"
+          version: "3.16.3"
 
-      - name: Helm update dependencies
-        shell: bash
-        run: helm dependency update install/charts/oasf
+      - name: Install Task
+        uses: go-task/setup-task@01a4adf9db2d14c1de7a560f09170b6e0df736aa # v2.1.0
 
       - name: Helm lint
-        shell: bash
-        run: helm lint install/charts/oasf --with-subcharts
+        run: task lint:charts
 
-      - name: Set chart name
-        id: chart-name
-        shell: bash
-        run: echo "value=${{ github.event.repository.name }}" >> "$GITHUB_OUTPUT"
-
+      # The package file is named after the chart (oasf), not the repository.
+      # The chart is published as oci://ghcr.io/agntcy/oasf-server/helm-charts/oasf.
       - name: Helm package
-        shell: bash
+        id: package
+        env:
+          VERSION: ${{ needs.prepare.outputs.helm_release_tag }}
         run: |
-          helm package install/charts/oasf --dependency-update --version ${{ needs.prepare.outputs.helm_release_tag }}
+          set -euo pipefail
+          helm package install/charts/oasf --dependency-update --version "$VERSION"
+          chart=$(yq -r .name install/charts/oasf/Chart.yaml)
+          echo "file=${chart}-${VERSION}.tgz" >> "$GITHUB_OUTPUT"
 
       - name: Helm push to GHCR OCI registry
-        shell: bash
+        env:
+          FILE: ${{ steps.package.outputs.file }}
         run: |
-          echo "🚧 Pushing ${{ needs.prepare.outputs.helm_release_tag }} to GHCR OCI registry"
-          helm push ${{ steps.chart-name.outputs.value }}-${{ needs.prepare.outputs.helm_release_tag }}.tgz oci://ghcr.io/agntcy/oasf/helm-charts
+          echo "Pushing ${FILE} to oci://ghcr.io/agntcy/oasf-server/helm-charts"
+          helm push "$FILE" oci://ghcr.io/agntcy/oasf-server/helm-charts
 
       - name: Create Release
         id: create_release
@@ -548,6 +590,7 @@ jobs:
       - build
       - test
       - smoke
+      - e2e
       - publish_main
       - server_release
       - helm_release

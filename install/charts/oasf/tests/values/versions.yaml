@@ -1,0 +1,7 @@
+schema:
+  versions:
+    - schema: 1.1.0
+      tag: v1.1.3
+      default: true
+    - schema: 1.0.0
+      tag: v1.0.4

@@ -125,3 +125,89 @@ User-provided ingress.annotations override chart defaults.
 {{- end -}}
 {{- toYaml (mergeOverwrite (dict) $defaults ($root.Values.ingress.annotations | default dict)) -}}
 {{- end }}
+
+{{/*
+Validate schema.versions and return the default schema version. Fails rendering
+when there are no versions, a version is duplicated or has no schema source, or
+more than one version is marked as the default. Without an explicit default, the
+first version is the default.
+*/}}
+{{- define "chart.schema.default" -}}
+{{- $versions := .Values.schema.versions | default list -}}
+{{- if not $versions -}}
+{{- fail "schema.versions must list at least one schema version" -}}
+{{- end -}}
+{{- $seen := dict -}}
+{{- $defaults := list -}}
+{{- range $versions -}}
+{{- if not .schema -}}
+{{- fail "every entry in schema.versions needs a schema version" -}}
+{{- end -}}
+{{- $schema := toString .schema -}}
+{{- if hasKey $seen $schema -}}
+{{- fail (printf "schema.versions lists %s more than once" $schema) -}}
+{{- end -}}
+{{- $_ := set $seen $schema true -}}
+{{- if and (not .tag) (not .hostPath) -}}
+{{- fail (printf "schema.versions entry %s needs a tag (schema image tag) or a hostPath" $schema) -}}
+{{- end -}}
+{{- if .default -}}
+{{- $defaults = append $defaults $schema -}}
+{{- end -}}
+{{- end -}}
+{{- if gt (len $defaults) 1 -}}
+{{- fail (printf "only one schema.versions entry can be the default, got %s" (join ", " $defaults)) -}}
+{{- end -}}
+{{- if $defaults -}}
+{{- first $defaults -}}
+{{- else -}}
+{{- (first $versions).schema | toString -}}
+{{- end -}}
+{{- end }}
+
+{{/*
+Server image for one schema version: the version's server.tag, else image.tag,
+else the chart's appVersion.
+Usage: include with dict {"root": $, "version": $version}
+*/}}
+{{- define "chart.server.image" -}}
+{{- $root := .root -}}
+{{- $server := .version.server | default dict -}}
+{{- $tag := include "chart.server.tag" . -}}
+{{- $digest := ternary ($server.digest | default "") ($root.Values.image.digest | default "") (hasKey $server "tag") -}}
+{{- if $digest -}}
+{{- printf "%s:%s@%s" $root.Values.image.repository $tag $digest -}}
+{{- else -}}
+{{- printf "%s:%s" $root.Values.image.repository $tag -}}
+{{- end -}}
+{{- end }}
+
+{{/*
+Server version reported for one schema version: its server image tag.
+Usage: include with dict {"root": $, "version": $version}
+*/}}
+{{- define "chart.server.tag" -}}
+{{- $server := .version.server | default dict -}}
+{{- $server.tag | default .root.Values.image.tag | default .root.Chart.AppVersion -}}
+{{- end }}
+
+{{/*
+Schema image for one schema version, pinned by digest when one is given.
+Usage: include with dict {"root": $, "version": $version}
+*/}}
+{{- define "chart.schema.image" -}}
+{{- $repository := .version.repository | default .root.Values.schema.image.repository -}}
+{{- if .version.digest -}}
+{{- printf "%s:%s@%s" $repository .version.tag .version.digest -}}
+{{- else -}}
+{{- printf "%s:%s" $repository .version.tag -}}
+{{- end -}}
+{{- end }}
+
+{{/*
+Name of the resources for one schema version, e.g. oasf-1-1-0.
+Usage: include with dict {"root": $, "version": $version}
+*/}}
+{{- define "chart.version.fullname" -}}
+{{- printf "%s-%s" (include "chart.fullname" .root) (toString .version.schema | replace "." "-") | trunc 63 | trimSuffix "-" -}}
+{{- end }}
