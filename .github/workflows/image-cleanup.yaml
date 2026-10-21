@@ -48,3 +48,7 @@ jobs:
           # Only PR and commit tags are pruned. The exclusions are appended to
           # whatever is requested, so releases, main and latest always stay.
           image-tags: ${{ inputs.image-tags }} !v* !main !latest
+          # Images are multi-platform: their platform manifests are untagged
+          # package versions, so selecting untagged ones too would delete the
+          # manifests behind the tags kept above.
+          tag-selection: tagged
