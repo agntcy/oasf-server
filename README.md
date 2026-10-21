@@ -113,10 +113,36 @@ The schema server uses a number of environment variables.
 | ---------------- | ----------------------------------------------------------------------------------------- |
 | HTTP_PORT        | The server HTTP port number, default: `8080`                                              |
 | LOG_LEVEL        | Logger level (`debug`, `info`, `warning`, `error`), default: `warning`                    |
-| SCHEMA_DIR       | The directory containing the schema, default: `../oasf/schema`                            |
+| SCHEMA_DIR       | The directory containing the schema, default: `../oasf/schema`, or `/app/schema` in the image |
 | SCHEMA_EXTENSION | Comma-separated extension directories, relative to SCHEMA_DIR or absolute; blank for none |
 | RELEASE_NODE     | The Erlang node name. Set it if you want to run more than one server on the same computer |
 
 ```shell
 SCHEMA_DIR=../oasf/schema SCHEMA_EXTENSION=extensions iex -S mix phx.server
 ```
+
+### Running the Docker Image
+
+The `ghcr.io/agntcy/oasf-server` image does not contain a schema. Mount one at
+`/app/schema` (the image's `SCHEMA_DIR`). Without a schema the server prints an
+error and exits with a non-zero status:
+
+```text
+error: No schema found in SCHEMA_DIR=/app/schema: /app/schema/version.json does not exist. ...
+```
+
+To serve a schema from a local checkout of [agntcy/oasf](https://github.com/agntcy/oasf):
+
+```shell
+docker run --rm -p 8080:8080 -v $PWD/schema:/app/schema:ro ghcr.io/agntcy/oasf-server:latest
+```
+
+Released schemas are also published as `ghcr.io/agntcy/oasf-schema` images, with the
+schema under `/schema`. Copy one into a volume and mount that volume in the server:
+
+```shell
+docker run --rm -v oasf-schema:/app/schema ghcr.io/agntcy/oasf-schema:v1.1.1 cp -R /schema/. /app/schema
+docker run --rm -p 8080:8080 -v oasf-schema:/app/schema:ro ghcr.io/agntcy/oasf-server:latest
+```
+
+`task test:image` checks both cases against a locally built image.

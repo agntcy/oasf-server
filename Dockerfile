@@ -78,16 +78,14 @@ RUN chown app:app /app
 # set runner ENV
 ENV MIX_ENV="prod"
 ENV PORT=8080
+# The image ships without a schema. Mount one here at runtime, for example from a
+# host directory or an oasf-schema image; the server refuses to start without it.
 ENV SCHEMA_DIR="/app/schema"
 ENV SCHEMA_EXTENSION="extensions"
 ENV PHX_SERVER=true
 
 # Only copy the final release from the build stage
 COPY --from=builder --chown=app:app /app/_build/${MIX_ENV}/rel/schema_server ./
-
-# Copy the things that need to be displayed. schema/test holds the schema test
-# suite and the example extension, which the released image must not serve.
-COPY --from=schema --chown=app:app --exclude=test . /app/schema
 
 USER app
 

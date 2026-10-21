@@ -26,4 +26,37 @@ defmodule Schema.ApplicationTest do
              ]
     end
   end
+
+  describe "check_schema_dir/1" do
+    @describetag :tmp_dir
+
+    test "accepts a directory with a version.json", %{tmp_dir: dir} do
+      File.write!(Path.join(dir, "version.json"), ~s({"version": "1.0.0"}))
+
+      assert Application.check_schema_dir(dir) == :ok
+    end
+
+    test "rejects a directory without a version.json", %{tmp_dir: dir} do
+      assert {:error, message} = Application.check_schema_dir(dir)
+      assert message =~ "No schema found in SCHEMA_DIR=#{dir}"
+    end
+
+    test "rejects a missing directory", %{tmp_dir: dir} do
+      assert {:error, _} = Application.check_schema_dir(Path.join(dir, "missing"))
+    end
+
+    test "suggests a mount only for an absolute SCHEMA_DIR" do
+      assert {:error, absolute} = Application.check_schema_dir("/nonexistent/schema")
+      assert absolute =~ "-v $PWD/schema:/nonexistent/schema:ro"
+
+      assert {:error, relative} = Application.check_schema_dir("nonexistent/schema")
+      assert relative =~ "Point SCHEMA_DIR at an OASF schema directory."
+      refute relative =~ "-v "
+    end
+
+    test "rejects an unset SCHEMA_DIR" do
+      assert {:error, "SCHEMA_DIR is not set" <> _} = Application.check_schema_dir(nil)
+      assert {:error, "SCHEMA_DIR is not set" <> _} = Application.check_schema_dir("")
+    end
+  end
 end

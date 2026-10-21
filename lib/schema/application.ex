@@ -8,11 +8,25 @@ defmodule Schema.Application do
 
   use Application
 
-  @spec start(any, any) :: {:error, any} | {:ok, pid}
+  @spec start(any, any) :: {:error, any} | {:ok, pid} | no_return()
   def start(_type, _args) do
     env = Application.get_env(:schema_server, __MODULE__)
 
     schema_dir = Keyword.get(env, :home)
+
+    case check_schema_dir(schema_dir) do
+      :ok ->
+        start_supervisor(env, schema_dir)
+
+      # Returning an error here makes the VM print a crash report and write a crash
+      # dump, which buries the reason. Print it on its own and halt instead.
+      {:error, reason} ->
+        IO.puts(:stderr, "error: " <> reason)
+        System.halt(1)
+    end
+  end
+
+  defp start_supervisor(env, schema_dir) do
     schema_versions = Keyword.get(env, :schema_versions)
 
     extensions = parse_extensions(Keyword.get(env, :extension))
@@ -40,6 +54,33 @@ defmodule Schema.Application do
   def config_change(changed, _new, removed) do
     SchemaWeb.Endpoint.config_change(changed, removed)
     :ok
+  end
+
+  # The image ships without a schema, so one has to be mounted at SCHEMA_DIR. Refuse to
+  # start without it rather than serve an empty schema and report healthy.
+  @doc false
+  @spec check_schema_dir(String.t() | nil) :: :ok | {:error, String.t()}
+  def check_schema_dir(dir) when dir in [nil, ""] do
+    {:error, "SCHEMA_DIR is not set. Mount an OASF schema and set SCHEMA_DIR to its path."}
+  end
+
+  def check_schema_dir(dir) do
+    version_file = dir |> Path.expand() |> Path.join("version.json")
+
+    cond do
+      File.regular?(version_file) ->
+        :ok
+
+      Path.type(dir) == :absolute ->
+        {:error,
+         "No schema found in SCHEMA_DIR=#{dir}: #{version_file} does not exist. " <>
+           "Mount an OASF schema there, for example with -v $PWD/schema:#{dir}:ro."}
+
+      true ->
+        {:error,
+         "No schema found in SCHEMA_DIR=#{dir}: #{version_file} does not exist. " <>
+           "Point SCHEMA_DIR at an OASF schema directory."}
+    end
   end
 
   # A blank SCHEMA_EXTENSION means no extensions. Passing "" through would resolve to
