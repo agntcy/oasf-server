@@ -346,6 +346,19 @@ tasks:
       - cmd: echo "Running OASF server test suite..."
       - cmd: mix test
 
+  test:coverage:
+    desc: Write a coverage report of the test suite to cover/excoveralls.json
+    preconditions:
+      - which mix
+    deps:
+      - task: schema:fetch
+        vars: {TAG: '{{ .DEFAULT_SCHEMA_TAG }}'}
+    dir: '{{ .ROOT_DIR }}'
+    env:
+      SCHEMA_DIR: '{{ .SCHEMA_DIR }}'
+    cmds:
+      - mix coveralls.json
+
   test:server:extensions:
     desc: Test server code with the example extension loaded
     preconditions:
