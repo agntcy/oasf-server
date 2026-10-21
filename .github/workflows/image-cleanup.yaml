@@ -9,8 +9,8 @@ on:
       image-tags:
         required: false
         type: string
-        description: Which images to remove. Supports GLOB pattern.
-        default: "!latest !v*.*.*"
+        description: Which image tags to remove (glob patterns, ! excludes). Releases (v*), main and latest are always kept.
+        default: "pr*"
       dry-run:
         required: false
         type: boolean
@@ -45,4 +45,6 @@ jobs:
           timestamp-to-use: created_at
           # Which images should be deleted
           image-names: ${{ env.images }}
-          image-tags: ${{ env.image-tags }}
+          # Only PR and commit tags are pruned. The exclusions are appended to
+          # whatever is requested, so releases, main and latest always stay.
+          image-tags: ${{ inputs.image-tags }} !v* !main !latest
