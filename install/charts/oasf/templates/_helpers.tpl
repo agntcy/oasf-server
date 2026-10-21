@@ -148,8 +148,8 @@ first version is the default.
 {{- fail (printf "schema.versions lists %s more than once" $schema) -}}
 {{- end -}}
 {{- $_ := set $seen $schema true -}}
-{{- if and (not .tag) (not .hostPath) -}}
-{{- fail (printf "schema.versions entry %s needs a tag (schema image tag) or a hostPath" $schema) -}}
+{{- if and .tag .hostPath -}}
+{{- fail (printf "schema.versions entry %s sets both a tag (schema image tag) and a hostPath" $schema) -}}
 {{- end -}}
 {{- if .default -}}
 {{- $defaults = append $defaults $schema -}}
@@ -192,15 +192,17 @@ Usage: include with dict {"root": $, "version": $version}
 {{- end }}
 
 {{/*
-Schema image for one schema version, pinned by digest when one is given.
+Schema image for one schema version: tagged with the schema version unless the
+version sets a tag, and pinned by digest when one is given.
 Usage: include with dict {"root": $, "version": $version}
 */}}
 {{- define "chart.schema.image" -}}
 {{- $repository := .version.repository | default .root.Values.schema.image.repository -}}
+{{- $tag := .version.tag | default (toString .version.schema) -}}
 {{- if .version.digest -}}
-{{- printf "%s:%s@%s" $repository .version.tag .version.digest -}}
+{{- printf "%s:%s@%s" $repository $tag .version.digest -}}
 {{- else -}}
-{{- printf "%s:%s" $repository .version.tag -}}
+{{- printf "%s:%s" $repository $tag -}}
 {{- end -}}
 {{- end }}
 
