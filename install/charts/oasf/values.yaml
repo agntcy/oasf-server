@@ -42,12 +42,11 @@ schema:
     resources: {}
 
   versions: []
-    # - schema: 1.1.0   # URL segment and resource names
-    #   tag: v1.1.3     # oasf-schema image tag
+    # - schema: 1.1.0   # URL segment, resource names and oasf-schema image tag
     #   digest: ""      # optional, pins the schema image
     #   default: true   # at most one; without one, the first version is the default
     # - schema: 1.0.0
-    #   tag: v1.0.4
+    #   tag: ""         # optional, overrides the oasf-schema image tag
     #   server:         # optional per-version server image override
     #     tag: v2.0.1
     #     digest: ""

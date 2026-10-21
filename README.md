@@ -175,11 +175,9 @@ image:
 schema:
   mount: initContainer   # or imageVolume, on Kubernetes 1.35+
   versions:
-    - schema: 1.1.0      # URL segment and resource names
-      tag: v1.1.3        # oasf-schema image tag
+    - schema: 1.1.0      # URL segment, resource names and oasf-schema image tag
       default: true
     - schema: 1.0.0
-      tag: v1.0.4
 ```
 
 ```shell

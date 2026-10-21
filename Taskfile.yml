@@ -246,8 +246,8 @@ tasks:
       MOUNT: '{{ .MOUNT | default "initContainer" }}'
       MISSING_SCHEMA: 9.9.9
       E2E_VALUES_PATH: '/tmp/oasf-e2e-values.json'
-      SCHEMA_TAGS:
-        sh: jq -r '[.versions[].tag] | join(" ")' '{{ .SCHEMA_VERSIONS_FILE }}'
+      SCHEMAS:
+        sh: jq -r '[.versions[].schema] | join(" ")' '{{ .SCHEMA_VERSIONS_FILE }}'
     cmds:
       - defer: {task: down}
       # Every supported version from schema-versions.json, plus one whose schema
@@ -255,8 +255,8 @@ tasks:
       - |
         jq --arg mount '{{ .MOUNT }}' --arg missing '{{ .MISSING_SCHEMA }}' '{schema: {
             mount: $mount,
-            versions: ([.versions[] | {schema, tag, default: (.default // false)}]
-              + [{schema: $missing, tag: "v\($missing)-missing"}])
+            versions: ([.versions[] | {schema, default: (.default // false)}]
+              + [{schema: $missing}])
           }}' '{{ .SCHEMA_VERSIONS_FILE }}' > '{{ .E2E_VALUES_PATH }}'
         cat '{{ .E2E_VALUES_PATH }}'
       - task: up
@@ -264,7 +264,7 @@ tasks:
           DEV_SCHEMA: "false"
           HELM_WAIT: "false"
           HELM_EXTRA_ARGS: '-f {{ .E2E_VALUES_PATH }}'
-          SCHEMA_IMAGE_TAGS: '{{ .SCHEMA_TAGS }}'
+          SCHEMA_IMAGE_TAGS: '{{ .SCHEMAS }}'
       - |
         set -eu
         for schema in $(jq -r '.versions[].schema' '{{ .SCHEMA_VERSIONS_FILE }}'); do

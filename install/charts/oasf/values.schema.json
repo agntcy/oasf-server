@@ -60,7 +60,7 @@
                 "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+(-[0-9A-Za-z.-]+)?$",
                 "description": "Schema version, used as the URL segment and in resource names."
               },
-              "tag": { "type": "string", "minLength": 1, "description": "oasf-schema image tag." },
+              "tag": { "type": "string", "minLength": 1, "description": "oasf-schema image tag. Defaults to the schema version." },
               "repository": { "type": "string", "minLength": 1, "description": "Overrides schema.image.repository." },
               "digest": { "$ref": "#/definitions/digest" },
               "hostPath": { "type": "string", "minLength": 1, "description": "Mount this node directory instead of a schema image, for local development." },
@@ -76,10 +76,7 @@
                 }
               }
             },
-            "oneOf": [
-              { "required": ["tag"], "not": { "required": ["hostPath"] } },
-              { "required": ["hostPath"], "not": { "required": ["tag"] } }
-            ]
+            "not": { "required": ["tag", "hostPath"] }
           }
         }
       }
