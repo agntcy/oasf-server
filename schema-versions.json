@@ -1,8 +1,8 @@
 {
-  "$comment": "Schema versions this server supports. tag is the agntcy/oasf git tag (and oasf-schema image tag) to test against; Renovate bumps it within each line.",
+  "$comment": "Schema versions this server supports. schema is also the oasf-schema image tag; ref is the agntcy/oasf release tag the tests download that schema from, which Renovate bumps within each line.",
   "versions": [
-    { "schema": "1.1.0", "tag": "v1.1.3", "default": true },
-    { "schema": "1.0.0", "tag": "v1.0.4" },
-    { "schema": "0.8.0", "tag": "v0.8.7" }
+    { "schema": "1.1.0", "ref": "v1.1.3", "default": true },
+    { "schema": "1.0.0", "ref": "v1.0.4" },
+    { "schema": "0.8.0", "ref": "v0.8.7" }
   ]
 }

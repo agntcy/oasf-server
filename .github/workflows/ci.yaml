@@ -67,7 +67,7 @@ jobs:
     outputs:
       image_tag: ${{ steps.resolve.outputs.image_tag }}
       helm_release_tag: ${{ steps.resolve.outputs.helm_release_tag }}
-      schema_tags: ${{ steps.resolve.outputs.schema_tags }}
+      schemas: ${{ steps.resolve.outputs.schemas }}
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
@@ -101,7 +101,7 @@ jobs:
           # Export vars
           echo "image_tag=$image_tag" >> "$GITHUB_OUTPUT"
           echo "helm_release_tag=$HELM_RELEASE_TAG" >> "$GITHUB_OUTPUT"
-          echo "schema_tags=$(jq -c '[.versions[].tag]' schema-versions.json)" >> "$GITHUB_OUTPUT"
+          echo "schemas=$(jq -c '[.versions[].schema]' schema-versions.json)" >> "$GITHUB_OUTPUT"
 
   build:
     name: Build
@@ -226,7 +226,7 @@ jobs:
           token: ${{ secrets.CODECOV_TOKEN }}
 
   smoke:
-    name: Smoke test (${{ matrix.tag }})
+    name: Smoke test (${{ matrix.schema }})
     if: ${{ !startsWith(github.ref, 'refs/tags/helm/') }}
     needs:
       - prepare
@@ -235,7 +235,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        tag: ${{ fromJson(needs.prepare.outputs.schema_tags) }}
+        schema: ${{ fromJson(needs.prepare.outputs.schemas) }}
     steps:
       - name: Checkout code
         uses: actions/checkout@d632683dd7b4114ad314bca15554477dd762a938 # v4.2.0
@@ -254,12 +254,12 @@ jobs:
       - name: Load image
         run: docker load --input artifacts/oasf-server-amd64.tar
 
-      - name: Smoke-test the image with schema ${{ matrix.tag }}
+      - name: Smoke-test the image with schema ${{ matrix.schema }}
         env:
           IMAGE_REPO: ghcr.io/agntcy
           IMAGE_TAG: ${{ needs.prepare.outputs.image_tag }}
-          TAG: ${{ matrix.tag }}
-        run: task test:smoke TAG="$TAG"
+          SCHEMA: ${{ matrix.schema }}
+        run: task test:smoke SCHEMA="$SCHEMA"
 
   # The released image is only rebuilt on a v* tag, so ghcr `latest` can sit
   # months behind main and the nightly Trivy scan reports a state nobody is

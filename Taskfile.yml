@@ -14,12 +14,14 @@ vars:
   IMAGE_TAG: '{{ .IMAGE_TAG }}'
 
   ## Supported schema versions. Tests and local deployments use the default one,
-  ## downloaded into .schemas/<tag>, unless SCHEMA_DIR points at another schema.
+  ## downloaded into .schemas/<ref>, unless SCHEMA_DIR points at another schema.
   SCHEMA_VERSIONS_FILE: '{{ .ROOT_DIR }}/schema-versions.json'
   SCHEMA_CACHE_DIR: '{{ .ROOT_DIR }}/.schemas'
-  DEFAULT_SCHEMA_TAG:
-    sh: jq -er '[.versions[] | select(.default)] | if length == 1 then .[0].tag else error("schema-versions.json needs exactly one default") end' '{{ .ROOT_DIR }}/schema-versions.json'
-  SCHEMA_DIR: '{{ .SCHEMA_DIR | default (printf "%s/.schemas/%s" .ROOT_DIR .DEFAULT_SCHEMA_TAG) }}'
+  DEFAULT_SCHEMA:
+    sh: jq -er '[.versions[] | select(.default)] | if length == 1 then .[0].schema else error("schema-versions.json needs exactly one default") end' '{{ .ROOT_DIR }}/schema-versions.json'
+  DEFAULT_SCHEMA_REF:
+    sh: jq -er '.versions[] | select(.default) | .ref' '{{ .ROOT_DIR }}/schema-versions.json'
+  SCHEMA_DIR: '{{ .SCHEMA_DIR | default (printf "%s/.schemas/%s" .ROOT_DIR .DEFAULT_SCHEMA_REF) }}'
 
   ## Dependency config
   BIN_DIR: '{{ .ROOT_DIR }}/bin'
@@ -74,7 +76,7 @@ tasks:
       - deps:kubectl
       - deps:kind
       - task: schema:fetch
-        vars: {TAG: '{{ .DEFAULT_SCHEMA_TAG }}'}
+        vars: {REF: '{{ .DEFAULT_SCHEMA_REF }}'}
     vars:
       # Kind args
       KIND_CLUSTER_NAME: '{{ .KIND_CLUSTER_NAME | default "test-oasf-cluster" }}'
@@ -243,7 +245,7 @@ tasks:
       - which docker curl
     deps:
       - task: schema:fetch
-        vars: {TAG: '{{ .DEFAULT_SCHEMA_TAG }}'}
+        vars: {REF: '{{ .DEFAULT_SCHEMA_REF }}'}
     vars:
       IMAGE: '{{ .IMAGE_REPO }}/oasf-server:{{ .IMAGE_TAG | default "latest" }}'
       PORT: '{{ .PORT | default "18080" }}'
@@ -281,25 +283,25 @@ tasks:
           echo "OK: serving schema $expected."
 
   test:smoke:
-    desc: Boot the server image with one supported schema version (TAG, default the default version) and smoke-test it
+    desc: Boot the server image with one supported schema version (SCHEMA, default the default version) and smoke-test it
     preconditions:
       - which docker curl jq
     vars:
-      TAG: '{{ .TAG | default .DEFAULT_SCHEMA_TAG }}'
-      SCHEMA_VERSION:
-        sh: jq -er --arg tag '{{ .TAG | default .DEFAULT_SCHEMA_TAG }}' '.versions[] | select(.tag == $tag) | .schema' '{{ .SCHEMA_VERSIONS_FILE }}'
+      SCHEMA: '{{ .SCHEMA | default .DEFAULT_SCHEMA }}'
+      REF:
+        sh: jq -er --arg schema '{{ .SCHEMA | default .DEFAULT_SCHEMA }}' '.versions[] | select(.schema == $schema) | .ref' '{{ .SCHEMA_VERSIONS_FILE }}'
       IMAGE: '{{ .IMAGE_REPO }}/oasf-server:{{ .IMAGE_TAG | default "latest" }}'
       PORT: '{{ .PORT | default "18081" }}'
     deps:
       - task: schema:fetch
-        vars: {TAG: '{{ .TAG }}'}
+        vars: {REF: '{{ .REF }}'}
     cmds:
       - cmd: |
           set -eu
           container=$(docker run --detach --rm -p {{ .PORT }}:8080 \
-            -v "{{ .SCHEMA_CACHE_DIR }}/{{ .TAG }}:/app/schema:ro" {{ .IMAGE }})
+            -v "{{ .SCHEMA_CACHE_DIR }}/{{ .REF }}:/app/schema:ro" {{ .IMAGE }})
           trap 'docker rm --force "$container" > /dev/null' EXIT
-          if ! {{ .ROOT_DIR }}/scripts/smoke-test.sh http://localhost:{{ .PORT }} {{ .SCHEMA_VERSION }}; then
+          if ! {{ .ROOT_DIR }}/scripts/smoke-test.sh http://localhost:{{ .PORT }} {{ .SCHEMA }}; then
             docker logs "$container" | tail -n 50
             exit 1
           fi
@@ -307,30 +309,30 @@ tasks:
   test:smoke:all:
     desc: Run test:smoke for every supported schema version
     vars:
-      TAGS:
-        sh: jq -r '.versions[].tag' '{{ .SCHEMA_VERSIONS_FILE }}'
+      SCHEMAS:
+        sh: jq -r '.versions[].schema' '{{ .SCHEMA_VERSIONS_FILE }}'
     cmds:
-      - for: {var: TAGS}
+      - for: {var: SCHEMAS}
         task: test:smoke
-        vars: {TAG: '{{ .ITEM }}'}
+        vars: {SCHEMA: '{{ .ITEM }}'}
 
   schema:fetch:
-    desc: Download the schema of an agntcy/oasf tag (TAG) into .schemas/<tag>
+    desc: Download the schema of an agntcy/oasf release tag (REF) into .schemas/<ref>
     requires:
-      vars: [TAG]
+      vars: [REF]
     status:
-      - test -f '{{ .SCHEMA_CACHE_DIR }}/{{ .TAG }}/version.json'
+      - test -f '{{ .SCHEMA_CACHE_DIR }}/{{ .REF }}/version.json'
     cmds:
       - cmd: |
           set -eu
           tmp=$(mktemp -d)
           trap 'rm -rf "$tmp"' EXIT
           curl --fail --silent --show-error --location \
-            "https://codeload.github.com/agntcy/oasf/tar.gz/refs/tags/{{ .TAG }}" | tar -xz -C "$tmp"
+            "https://codeload.github.com/agntcy/oasf/tar.gz/refs/tags/{{ .REF }}" | tar -xz -C "$tmp"
           mkdir -p '{{ .SCHEMA_CACHE_DIR }}'
-          rm -rf '{{ .SCHEMA_CACHE_DIR }}/{{ .TAG }}'
-          mv "$tmp"/*/schema '{{ .SCHEMA_CACHE_DIR }}/{{ .TAG }}'
-          echo "Fetched the {{ .TAG }} schema into {{ .SCHEMA_CACHE_DIR }}/{{ .TAG }}"
+          rm -rf '{{ .SCHEMA_CACHE_DIR }}/{{ .REF }}'
+          mv "$tmp"/*/schema '{{ .SCHEMA_CACHE_DIR }}/{{ .REF }}'
+          echo "Fetched the {{ .REF }} schema into {{ .SCHEMA_CACHE_DIR }}/{{ .REF }}"
 
   test:server:
     desc: Test server code (includes schema integrity, API, and unit tests)
@@ -338,7 +340,7 @@ tasks:
       - which mix
     deps:
       - task: schema:fetch
-        vars: {TAG: '{{ .DEFAULT_SCHEMA_TAG }}'}
+        vars: {REF: '{{ .DEFAULT_SCHEMA_REF }}'}
     dir: '{{ .ROOT_DIR }}'
     env:
       SCHEMA_DIR: '{{ .SCHEMA_DIR }}'
@@ -352,7 +354,7 @@ tasks:
       - which mix
     deps:
       - task: schema:fetch
-        vars: {TAG: '{{ .DEFAULT_SCHEMA_TAG }}'}
+        vars: {REF: '{{ .DEFAULT_SCHEMA_REF }}'}
     dir: '{{ .ROOT_DIR }}'
     env:
       SCHEMA_DIR: '{{ .SCHEMA_DIR }}'
@@ -365,7 +367,7 @@ tasks:
       - which mix
     deps:
       - task: schema:fetch
-        vars: {TAG: '{{ .DEFAULT_SCHEMA_TAG }}'}
+        vars: {REF: '{{ .DEFAULT_SCHEMA_REF }}'}
     dir: '{{ .ROOT_DIR }}'
     env:
       SCHEMA_DIR: '{{ .SCHEMA_DIR }}'

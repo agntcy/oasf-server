@@ -83,7 +83,7 @@
         "/^schema-versions\\.json$/"
       ],
       "matchStrings": [
-        "\"tag\": \"(?<currentValue>v\\d+\\.\\d+\\.\\d+)\""
+        "\"ref\": \"(?<currentValue>v\\d+\\.\\d+\\.\\d+)\""
       ],
       "depNameTemplate": "agntcy/oasf",
       "datasourceTemplate": "github-tags"
