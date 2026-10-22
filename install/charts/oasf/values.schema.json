@@ -1,0 +1,89 @@
+{
+  "$schema": "https://json-schema.org/draft-07/schema#",
+  "type": "object",
+  "required": ["image", "schema"],
+  "properties": {
+    "image": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["repository"],
+      "properties": {
+        "repository": { "type": "string", "minLength": 1 },
+        "tag": { "type": "string" },
+        "digest": { "$ref": "#/definitions/digest" },
+        "pullPolicy": { "$ref": "#/definitions/pullPolicy" },
+        "pullSecrets": { "type": "array" },
+        "versions": {
+          "not": {},
+          "description": "image.versions was replaced by schema.versions in chart v2."
+        }
+      }
+    },
+    "schema": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["image", "mount", "versions"],
+      "properties": {
+        "image": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["repository"],
+          "properties": {
+            "repository": { "type": "string", "minLength": 1 },
+            "pullPolicy": { "$ref": "#/definitions/pullPolicy" }
+          }
+        },
+        "mount": { "enum": ["initContainer", "imageVolume"] },
+        "imageVolume": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "skipVersionCheck": { "type": "boolean" }
+          }
+        },
+        "initContainer": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "resources": { "type": "object" }
+          }
+        },
+        "versions": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["schema"],
+            "properties": {
+              "schema": {
+                "type": "string",
+                "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+(-[0-9A-Za-z.-]+)?$",
+                "description": "Schema version, used as the URL segment and in resource names."
+              },
+              "tag": { "type": "string", "minLength": 1, "description": "oasf-schema image tag. Defaults to the schema version." },
+              "repository": { "type": "string", "minLength": 1, "description": "Overrides schema.image.repository." },
+              "digest": { "$ref": "#/definitions/digest" },
+              "hostPath": { "type": "string", "minLength": 1, "description": "Mount this node directory instead of a schema image, for local development." },
+              "default": { "type": "boolean" },
+              "api": { "type": "string", "description": "API version reported for this schema version in /api/versions." },
+              "server": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": ["tag"],
+                "properties": {
+                  "tag": { "type": "string", "minLength": 1 },
+                  "digest": { "$ref": "#/definitions/digest" }
+                }
+              }
+            },
+            "not": { "required": ["tag", "hostPath"] }
+          }
+        }
+      }
+    }
+  },
+  "definitions": {
+    "digest": { "type": "string", "pattern": "^(sha256:[0-9a-f]{64})?$" },
+    "pullPolicy": { "enum": ["Always", "IfNotPresent", "Never"] }
+  }
+}

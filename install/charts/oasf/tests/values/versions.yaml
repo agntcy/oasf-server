@@ -1,0 +1,5 @@
+schema:
+  versions:
+    - schema: 1.1.0
+      default: true
+    - schema: 1.0.0

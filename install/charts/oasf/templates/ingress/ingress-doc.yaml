@@ -3,6 +3,7 @@
 
 {{- if .Values.ingress.enabled -}}
 {{- $fullName := include "chart.fullname" . -}}
+{{- $default := include "chart.schema.default" . -}}
 {{- $svcPort := .Values.service.port -}}
 {{- if and .Values.ingress.className (not (semverCompare ">=1.18-0" .Capabilities.KubeVersion.GitVersion)) }}
   {{- if not (hasKey .Values.ingress.annotations "kubernetes.io/ingress.class") }}
@@ -42,20 +43,20 @@ spec:
     - host: {{ .host | quote }}
       http:
         paths:
-          {{- range $index, $version := $.Values.image.versions }}
+          {{- range $version := $.Values.schema.versions }}
           - path: /{{ $version.schema }}/doc
             pathType: ImplementationSpecific
             backend:
               service:
-                name: {{ $fullName }}-{{ $version.schema | replace "." "-" }}
+                name: {{ include "chart.version.fullname" (dict "root" $ "version" $version) }}
                 port:
                   number: {{ $svcPort }}
-          {{- if $version.default }}
+          {{- if eq (toString $version.schema) $default }}
           - path: /doc
             pathType: ImplementationSpecific
             backend:
               service:
-                name: {{ $fullName }}-{{ $version.schema | replace "." "-" }}
+                name: {{ include "chart.version.fullname" (dict "root" $ "version" $version) }}
                 port:
                   number: {{ $svcPort }}
           {{- end }}

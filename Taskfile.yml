@@ -27,9 +27,9 @@ vars:
   BIN_DIR: '{{ .ROOT_DIR }}/bin'
   HELM_VERSION: '3.16.3'
   HELM_BIN: '{{ .BIN_DIR }}/helm-{{.HELM_VERSION}}'
-  KUBECTL_VERSION: '1.31.3'
+  KUBECTL_VERSION: '1.35.8'
   KUBECTL_BIN: '{{ .BIN_DIR }}/kubectl-{{.KUBECTL_VERSION}}'
-  KIND_VERSION: '0.25.0'
+  KIND_VERSION: '0.33.0'
   KIND_BIN: '{{ .BIN_DIR }}/kind-{{.KIND_VERSION}}'
 
 ## Set refresh interval for observable tasks like hot-reload
@@ -68,9 +68,9 @@ tasks:
       - docker buildx bake -f docker-bake.hcl oasf-server {{.BAKE_OPTS}}
 
   up:
-    desc: Deploy services in an ephemeral kind cluster
+    desc: Deploy the chart in an ephemeral kind cluster, serving the schema in SCHEMA_DIR from the node
     preconditions:
-      - which yq
+      - which jq
     deps:
       - deps:helm
       - deps:kubectl
@@ -82,10 +82,21 @@ tasks:
       KIND_CLUSTER_NAME: '{{ .KIND_CLUSTER_NAME | default "test-oasf-cluster" }}'
       KIND_CREATE_OPTS: '{{ .KIND_CREATE_OPTS | default "" }}'
       KIND_CONFIG_PATH: '/tmp/{{.KIND_CLUSTER_NAME}}'
+      KIND_NODE_IMAGE: '{{ .KIND_NODE_IMAGE | default "kindest/node:v1.35.8@sha256:07b2536e30b803ed61d1677a79df6115f798ce64c80f9e22f6ed45afd09323c0" }}'
       # Deployment args
       HELM_NAMESPACE: '{{ .HELM_NAMESPACE | default "default" }}'
       HELM_CHART_PATH: '{{ .ROOT_DIR }}/install/charts/oasf'
       HELM_VALUES_PATH: '{{ .HELM_VALUES_PATH | default (printf "%s/install/charts/oasf/values-test.yaml" .ROOT_DIR) }}'
+      # Extra helm upgrade arguments, e.g. more -f files or --set flags.
+      HELM_EXTRA_ARGS: '{{ .HELM_EXTRA_ARGS | default "" }}'
+      # Wait for every Deployment to become ready.
+      HELM_WAIT: '{{ .HELM_WAIT | default "true" }}'
+      # Serve SCHEMA_DIR, mounted on the node at /schema, as the only schema
+      # version. Set to false when HELM_EXTRA_ARGS provides schema.versions.
+      DEV_SCHEMA: '{{ .DEV_SCHEMA | default "true" }}'
+      # oasf-schema image tags to load into the cluster; pulled if not present.
+      SCHEMA_IMAGE_TAGS: '{{ .SCHEMA_IMAGE_TAGS | default "" }}'
+      SERVER_IMAGE: '{{ .IMAGE_REPO }}/oasf-server:{{ .IMAGE_TAG | default "latest" }}'
       LOG_LEVEL: '{{ .LOG_LEVEL | default "" }}'
       RELEASE_NAME: 'oasf'
     cmds:
@@ -99,6 +110,7 @@ tasks:
         kind: Cluster
         nodes:
           - role: control-plane
+            image: {{ .KIND_NODE_IMAGE }}
             extraMounts:
               - hostPath: {{ .SCHEMA_DIR }}
                 containerPath: /schema
@@ -121,30 +133,24 @@ tasks:
       # Check cluster status
       - '{{ .KUBECTL_BIN }} cluster-info'
 
-      # Extract images from values-test.yaml and load them into kind.
+      # Load the server image and the schema images into kind.
       # Use a single-platform "docker save" + "kind load image-archive" rather than
       # "kind load docker-image": with Docker's containerd image store, saving a
       # multi-arch tag exports the full manifest list, and kind's --all-platforms
       # import fails on platform blobs not pulled locally (e.g. amd64 on arm64 hosts).
       - |
         set -eu
-        archive=""
-        trap 'rm -f "$archive"' EXIT
-        {{- if .IMAGE_TAG }}
         archive=$(mktemp "${TMPDIR:-/tmp}/oasf-image.XXXXXX")
-        docker save --platform linux/{{ ARCH }} "{{ .IMAGE_REPO }}/oasf-server:{{ .IMAGE_TAG }}" -o "$archive"
-        {{ .KIND_BIN }} load image-archive "$archive" --name {{ .KIND_CLUSTER_NAME }}
-        rm -f "$archive"
-        {{- else }}
-        images=$(yq eval '.image.versions[].server' {{ .HELM_VALUES_PATH }})
-        echo "Images to load: $images"
-        for image in $images; do
-          archive=$(mktemp "${TMPDIR:-/tmp}/oasf-image.XXXXXX")
-          docker save --platform linux/{{ ARCH }} "{{ .IMAGE_REPO }}/oasf-server:$image" -o "$archive"
+        trap 'rm -f "$archive"' EXIT
+        load() {
+          docker image inspect "$1" > /dev/null 2>&1 || docker pull --platform linux/{{ ARCH }} "$1"
+          docker save --platform linux/{{ ARCH }} "$1" -o "$archive"
           {{ .KIND_BIN }} load image-archive "$archive" --name {{ .KIND_CLUSTER_NAME }}
-          rm -f "$archive"
+        }
+        load "{{ .SERVER_IMAGE }}"
+        for tag in {{ .SCHEMA_IMAGE_TAGS }}; do
+          load "{{ .IMAGE_REPO }}/oasf-schema:$tag"
         done
-        {{- end }}
 
       # Deploy chart
       - |
@@ -152,17 +158,24 @@ tasks:
           {{ .HELM_CHART_PATH }} \
           -f {{ .HELM_VALUES_PATH }} \
           --set image.repository="{{ .IMAGE_REPO }}/oasf-server" \
+          --set image.tag="{{ .IMAGE_TAG | default "latest" }}" \
+          --set schema.image.repository="{{ .IMAGE_REPO }}/oasf-schema" \
+          {{- if eq .DEV_SCHEMA "true" }}
+          --set-string "schema.versions[0].schema=$(jq -r .version '{{ .SCHEMA_DIR }}/version.json')" \
+          --set "schema.versions[0].hostPath=/schema" \
+          --set "schema.versions[0].default=true" \
+          {{- end }}
           {{- if .LOG_LEVEL }}
           --set env.LOG_LEVEL={{.LOG_LEVEL}} \
           {{- end }}
-          {{- if .IMAGE_TAG }}
-          --set image.versions[0].server={{.IMAGE_TAG}} \
-          {{- end }}
+          {{ .HELM_EXTRA_ARGS }} \
           --namespace {{ .HELM_NAMESPACE }} \
           --create-namespace \
           --install \
+          {{- if eq .HELM_WAIT "true" }}
           --wait \
           --wait-for-jobs \
+          {{- end }}
           --timeout "15m"
 
       # Wait for the ingress controller deployment to be available
@@ -171,8 +184,8 @@ tasks:
         if ! {{ .KUBECTL_BIN }} wait deployment/{{.RELEASE_NAME}}-ingress-controller \
             --for=condition=Available \
             -n {{ .HELM_NAMESPACE }} \
-            --timeout=120s; then
-          echo "Error: Deployment {{.RELEASE_NAME}}-ingress-controller did not become available within 120 seconds."
+            --timeout=300s; then
+          echo "Error: Deployment {{.RELEASE_NAME}}-ingress-controller did not become available within 300 seconds."
           exit 1
         fi
         echo
@@ -211,33 +224,55 @@ tasks:
     cmds:
       - task: test:server
       - task: test:server:extensions
+      - task: test:charts
+
+  test:charts:
+    desc: Run the Helm chart unit tests (helm unittest, in Docker)
+    preconditions:
+      - which docker
+    vars:
+      HELM_UNITTEST_IMAGE: 'helmunittest/helm-unittest:3.19.0-1.0.3@sha256:4684b7cf1e1a20ce3ff2cbfcceda36566d862d6024fa23684955d10ef6d51ab1'
+    cmds:
+      # Run as the current user, so the plugin can write to the checkout.
+      - docker run --rm --user "$(id -u):$(id -g)" -e HOME=/tmp -v "{{ .ROOT_DIR }}/install/charts:/apps" {{ .HELM_UNITTEST_IMAGE }} oasf
 
   test:e2e:
-    desc: Deploy to an ephemeral kind cluster and verify the server starts healthy
+    desc: Deploy every supported schema version, plus one with a missing schema image, to kind and check them (MOUNT=initContainer|imageVolume)
+    preconditions:
+      - which jq curl
     deps:
       - deps:kubectl
+    vars:
+      MOUNT: '{{ .MOUNT | default "initContainer" }}'
+      MISSING_SCHEMA: 9.9.9
+      E2E_VALUES_PATH: '/tmp/oasf-e2e-values.json'
+      SCHEMAS:
+        sh: jq -r '[.versions[].schema] | join(" ")' '{{ .SCHEMA_VERSIONS_FILE }}'
     cmds:
       - defer: {task: down}
+      # Every supported version from schema-versions.json, plus one whose schema
+      # image does not exist: it must stay unready without affecting the others.
+      - |
+        jq --arg mount '{{ .MOUNT }}' --arg missing '{{ .MISSING_SCHEMA }}' '{schema: {
+            mount: $mount,
+            versions: ([.versions[] | {schema, default: (.default // false)}]
+              + [{schema: $missing}])
+          }}' '{{ .SCHEMA_VERSIONS_FILE }}' > '{{ .E2E_VALUES_PATH }}'
+        cat '{{ .E2E_VALUES_PATH }}'
       - task: up
-      - cmd: curl --retry 10 --retry-delay 3 --retry-connrefused --fail --silent http://localhost:8080/ > /dev/null
-      # The image must not ship or serve the example extension from schema/test.
+        vars:
+          DEV_SCHEMA: "false"
+          HELM_WAIT: "false"
+          HELM_EXTRA_ARGS: '-f {{ .E2E_VALUES_PATH }}'
+          SCHEMA_IMAGE_TAGS: '{{ .SCHEMAS }}'
+      - |
+        set -eu
+        for schema in $(jq -r '.versions[].schema' '{{ .SCHEMA_VERSIONS_FILE }}'); do
+          {{ .KUBECTL_BIN }} rollout status "deployment/oasf-$(echo "$schema" | tr . -)" --timeout=300s
+        done
       - cmd: |
-          set -eu
-          extensions=$(curl --fail --silent http://localhost:8080/api/extensions)
-          if [ "$extensions" != "{}" ]; then
-            echo "Error: expected no extensions to be loaded, got: $extensions"
-            exit 1
-          fi
-      # The image must not ship a schema; the chart mounts one at /schema.
-      - cmd: |
-          set -eu
-          pod=$({{ .KUBECTL_BIN }} get pod -l default-schema=true -o name | head -n 1)
-          # Guard against a false pass if exec itself fails.
-          {{ .KUBECTL_BIN }} exec "$pod" -- test -f /schema/version.json
-          if {{ .KUBECTL_BIN }} exec "$pod" -- test -e /app/schema; then
-            echo "Error: /app/schema must not be present in the image"
-            exit 1
-          fi
+          KUBECTL='{{ .KUBECTL_BIN }}' {{ .ROOT_DIR }}/scripts/e2e-check.sh http://localhost:8080 \
+            '{{ .SCHEMA_VERSIONS_FILE }}' '{{ .MISSING_SCHEMA }}'
 
   test:image:
     desc: Verify the server image refuses to start without a schema and serves a mounted one
@@ -390,7 +425,14 @@ tasks:
         sh: find . -name Chart.yaml -exec dirname {} \;
     cmds:
       - for: {var: HELM_ALL_CHART_PATHS}
-        cmd: 'cd {{ .ITEM }} && {{ .HELM_BIN }} lint'
+        # A chart without schema versions fails to render, so lint it with each
+        # set of example values under ci/.
+        cmd: |
+          set -eu
+          cd {{ .ITEM }}
+          for values in ci/*-values.yaml; do
+            {{ .HELM_BIN }} lint . --strict -f "$values"
+          done
 
   fmt:
     desc: Run formatters

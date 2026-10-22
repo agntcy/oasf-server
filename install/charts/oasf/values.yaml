@@ -1,28 +1,57 @@
 # Copyright AGNTCY Contributors (https://github.com/agntcy)
 # SPDX-License-Identifier: Apache-2.0
 
-# Default values for helm-chart.
-# This is a YAML-formatted file.
-# Declare variables to be passed into your templates.
+# Default values for the oasf chart.
 
 localDeploy: false
 nameOverride: ""
 fullnameOverride: ""
 
+# oasf-server image. Every schema version runs this image unless its entry
+# overrides it with server.tag.
 image:
   repository: ghcr.io/agntcy/oasf-server
-  versions: []
-    # - server: v0.8.7
-    #   schema: 0.8.0
-    #   api: 0.6.0
-    # - server: v1.0.4
-    #   schema: 1.0.0
-    #   api: 0.6.0
-    # - server: v1.1.0
-    #   schema: 1.1.0
-    #   api: 0.6.0
+  # Defaults to the chart's appVersion.
+  tag: ""
+  # Optional digest to pin the image, e.g. sha256:...
+  digest: ""
   pullPolicy: IfNotPresent
   pullSecrets: []
+
+# Schema versions to serve. Each version runs its own Deployment and Service,
+# named <fullname>-<schema with dots replaced by dashes>, and is served under
+# /<schema>, /api/<schema>, /schema/<schema> and /sample/<schema>. The default
+# version is also served without the version segment.
+schema:
+  image:
+    repository: ghcr.io/agntcy/oasf-schema
+    pullPolicy: IfNotPresent
+
+  # How the schema image is mounted into the server:
+  # - initContainer: an init container copies /schema into an emptyDir. Works on
+  #   every cluster.
+  # - imageVolume: the image is mounted as an image volume. Needs Kubernetes 1.35
+  #   or later, or the ImageVolume feature gate; rendering fails below 1.35.
+  mount: initContainer
+  imageVolume:
+    # Allow imageVolume below Kubernetes 1.35, for clusters that enabled the
+    # ImageVolume feature gate themselves. Without the gate the pods start
+    # without a schema.
+    skipVersionCheck: false
+  initContainer:
+    resources: {}
+
+  versions: []
+    # - schema: 1.1.0   # URL segment, resource names and oasf-schema image tag
+    #   digest: ""      # optional, pins the schema image
+    #   default: true   # at most one; without one, the first version is the default
+    # - schema: 1.0.0
+    #   tag: ""         # optional, overrides the oasf-schema image tag
+    #   server:         # optional per-version server image override
+    #     tag: v2.0.1
+    #     digest: ""
+    # - schema: 1.2.0-dev
+    #   hostPath: /schema  # local development: mount a schema directory from the node
 
 config:
   server_port: 8080
@@ -41,34 +70,33 @@ serviceAccount:
   # If not set and create is true, a name is generated using the fullname template.
   name: ""
 
+# Extra volumes and mounts for the server container. The schema is mounted at
+# /app/schema and an emptyDir at /tmp.
 volumes: []
-#  - name: schema
-#    hostPath:
-#      path: /path/on/host
-#      type: Directory
-
 volumeMounts: []
-#  - name: schema
-#    mountPath: /app/schema/reload
 
 # Additional environment variables
 env: {}
   # GA_TRACKING_ID: "G-XXXXXXXX-X"
-  # SCHEMA_DIR: /app/schema/reload
   # LOG_LEVEL: warning
 
 podAnnotations: {}
 
-podSecurityContext: {}
-  # fsGroup: 2000
+podSecurityContext:
+  runAsNonRoot: true
+  runAsUser: 1000
+  runAsGroup: 1000
+  fsGroup: 1000
+  seccompProfile:
+    type: RuntimeDefault
 
-securityContext: {}
-  # capabilities:
-  #   drop:
-  #   - ALL
-  # readOnlyRootFilesystem: true
-  # runAsNonRoot: true
-  # runAsUser: 1000
+# Applies to the server container and the schema init container.
+securityContext:
+  allowPrivilegeEscalation: false
+  readOnlyRootFilesystem: true
+  capabilities:
+    drop:
+      - ALL
 
 ingress:
   enabled: false

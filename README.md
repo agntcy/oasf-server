@@ -162,3 +162,29 @@ docker run --rm -p 8080:8080 -v oasf-schema:/app/schema:ro ghcr.io/agntcy/oasf-s
 ```
 
 `task test:image` checks both cases against a locally built image.
+
+### Deploying with Helm
+
+The `oasf` chart runs one server per schema version, all from the same server image,
+each with its schema mounted from an `oasf-schema` image:
+
+```yaml
+image:
+  repository: ghcr.io/agntcy/oasf-server
+  tag: v2.0.0
+schema:
+  mount: initContainer   # or imageVolume, on Kubernetes 1.35+
+  versions:
+    - schema: 1.1.0      # URL segment, resource names and oasf-schema image tag
+      default: true
+    - schema: 1.0.0
+```
+
+```shell
+helm install oasf oci://ghcr.io/agntcy/oasf-server/helm-charts/oasf -f values.yaml
+```
+
+See [`values.yaml`](./install/charts/oasf/values.yaml) for every option. Locally,
+`task up` deploys the chart to a kind cluster and serves `SCHEMA_DIR` from the node,
+so `task reload` picks up schema changes. `task test:e2e` deploys every supported
+version and checks them, and `task test:charts` runs the chart unit tests.
