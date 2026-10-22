@@ -437,7 +437,7 @@ tasks:
           done
           app_version=$(yq -r .appVersion Chart.yaml)
           image_tag=$(yq -r '.image.tag // ""' values.yaml)
-          if [ -n "$image_tag" ] && [ "$image_tag" != "$app_version" ]; then
+          if [ "$image_tag" != "$app_version" ]; then
             echo "{{ .ITEM }}: image.tag ($image_tag) differs from appVersion ($app_version)" >&2
             exit 1
           fi

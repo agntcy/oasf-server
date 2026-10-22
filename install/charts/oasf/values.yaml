@@ -11,8 +11,10 @@ fullnameOverride: ""
 # overrides it with server.tag.
 image:
   repository: ghcr.io/agntcy/oasf-server
-  # Defaults to the chart's appVersion.
-  tag: ""
+  # The oasf-server release this chart deploys. Keep it equal to appVersion
+  # in Chart.yaml (task lint checks it). Set it to upgrade the server without
+  # a new chart release.
+  tag: v2.0.0
   # Optional digest to pin the image, e.g. sha256:...
   digest: ""
   pullPolicy: IfNotPresent
