@@ -8,6 +8,11 @@ Releases up to `v1.x` shipped the server bundled with a schema from [agntcy/oasf
 
 ## Unreleased
 
+### Fixed
+
+- Generated `record` samples no longer repeat a locator type, which the validator rejects ([#8](https://github.com/agntcy/oasf-server/pull/8)).
+- The Validate button on object and class pages opens the Swagger UI (`/doc`, or `/<version>/doc` on a versioned page) instead of the removed `/doc/index.html` ([#9](https://github.com/agntcy/oasf-server/pull/9)).
+
 ## [v2.0.0](https://github.com/agntcy/oasf-server/releases/tag/v2.0.0) - 2026-10-22
 
 Supported schema versions: `1.1.0` (default), `1.0.0` and `0.8.0`, from the `ghcr.io/agntcy/oasf-schema` images of the same tags. See [schema-versions.json](./schema-versions.json).
