@@ -154,10 +154,11 @@ docker run --rm -p 8080:8080 -v $PWD/schema:/app/schema:ro ghcr.io/agntcy/oasf-s
 ```
 
 Released schemas are also published as `ghcr.io/agntcy/oasf-schema` images, with the
-schema under `/schema`. Copy one into a volume and mount that volume in the server:
+schema under `/schema` and tagged with the schema version. Mounting a new named volume
+at `/schema` fills it with the image's schema; then mount that volume in the server:
 
 ```shell
-docker run --rm -v oasf-schema:/app/schema ghcr.io/agntcy/oasf-schema:v1.1.1 cp -R /schema/. /app/schema
+docker run --rm -v oasf-schema:/schema ghcr.io/agntcy/oasf-schema:1.1.0 true
 docker run --rm -p 8080:8080 -v oasf-schema:/app/schema:ro ghcr.io/agntcy/oasf-server:latest
 ```
 
