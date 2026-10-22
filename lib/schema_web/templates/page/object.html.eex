@@ -39,7 +39,7 @@ SPDX-License-Identifier: Apache-2.0
     <div class="btn-group" role="group" aria-label="Schema actions">
       <button type="button" id="btn-json-schema" class="btn btn-sm btn-outline-primary" title="View JSON Schema">JSON Schema</button>
       <button type="button" id="btn-sample-data" class="btn btn-sm btn-outline-primary" title="View Sample Data">Sample</button>
-      <button type="button" id="btn-validate" class="btn btn-sm btn-outline-primary" title="Validation API" data-entity-type="object ">Validate</button>
+      <button type="button" id="btn-validate" class="btn btn-sm btn-outline-primary" title="Validation API" data-entity-type="object">Validate</button>
     </div>
   </div>
   <div class="col-auto">
