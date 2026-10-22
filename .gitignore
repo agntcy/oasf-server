@@ -62,3 +62,6 @@ node_modules/
 
 # ExUnit @tag :tmp_dir directories
 /tmp/
+
+# Schemas downloaded by task schema:fetch
+/.schemas/

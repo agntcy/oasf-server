@@ -52,6 +52,22 @@ SCHEMA_DIR=../oasf/schema SCHEMA_EXTENSION=test/extensions mix test
 
 If everything is correct, then you should not see any errors or warnings.
 
+### Supported Schema Versions
+
+[`schema-versions.json`](./schema-versions.json) lists the schema versions this server
+supports, each with the [agntcy/oasf](https://github.com/agntcy/oasf) release tag (`ref`)
+its schema is tested from, and marks one as the default. Renovate bumps each `ref` to the
+latest patch of its line.
+
+- `task test` runs the test suite against the default version. The schema is downloaded
+  into `.schemas/<ref>`; set `SCHEMA_DIR` to test against another schema.
+- `task test:smoke SCHEMA=<version>` boots the server image with one supported version and
+  checks the main pages and API endpoints, plus the page, JSON schema export and a
+  validated sample of every class and object. `task test:smoke:all` runs it for every
+  version, and CI runs it as a matrix.
+- A nightly workflow runs the test suite against `agntcy/oasf@main`, to catch schema
+  changes the server does not handle yet.
+
 ### Running the Schema Server
 
 You can use the Elixir's interactive shell,

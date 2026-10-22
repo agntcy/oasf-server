@@ -1,35 +1,92 @@
 {
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
-  "extends": ["config:recommended"],
-  "enabledManagers": ["dockerfile", "github-actions", "mix", "gomod"],
+  "extends": [
+    "config:recommended"
+  ],
+  "enabledManagers": [
+    "dockerfile",
+    "github-actions",
+    "mix",
+    "gomod",
+    "custom.regex"
+  ],
   "packageRules": [
     {
-      "matchManagers": ["mix"],
-      "matchUpdateTypes": ["patch"],
+      "description": "Supported schema versions only move within their line; adding a line is a manual change",
+      "matchFileNames": [
+        "schema-versions.json"
+      ],
+      "matchUpdateTypes": [
+        "major",
+        "minor"
+      ],
+      "enabled": false
+    },
+    {
+      "matchManagers": [
+        "mix"
+      ],
+      "matchUpdateTypes": [
+        "patch"
+      ],
       "automerge": true
     },
     {
-      "matchManagers": ["gomod"],
-      "matchUpdateTypes": ["patch"],
+      "matchManagers": [
+        "gomod"
+      ],
+      "matchUpdateTypes": [
+        "patch"
+      ],
       "automerge": true
     },
     {
-      "matchManagers": ["github-actions"],
-      "matchUpdateTypes": ["minor", "patch"],
+      "matchManagers": [
+        "github-actions"
+      ],
+      "matchUpdateTypes": [
+        "minor",
+        "patch"
+      ],
       "automerge": true
     },
     {
-      "matchManagers": ["dockerfile"],
-      "matchUpdateTypes": ["minor", "patch"],
+      "matchManagers": [
+        "dockerfile"
+      ],
+      "matchUpdateTypes": [
+        "minor",
+        "patch"
+      ],
       "automerge": true
     },
     {
-      "matchCategories": ["vulnerability"],
+      "matchCategories": [
+        "vulnerability"
+      ],
       "enabled": true,
       "automerge": true,
-      "addLabels": ["security"]
+      "addLabels": [
+        "security"
+      ]
     }
   ],
   "semanticCommits": "enabled",
-  "labels": ["dependencies"]
+  "labels": [
+    "dependencies"
+  ],
+  "customManagers": [
+    {
+      "customType": "regex",
+      "description": "Bump each supported schema line to its latest agntcy/oasf patch tag",
+      "managerFilePatterns": [
+        "/^schema-versions\\.json$/"
+      ],
+      "matchStrings": [
+        "\"ref\": \"(?<currentValue>v\\d+\\.\\d+\\.\\d+)\""
+      ],
+      "depNameTemplate": "agntcy/oasf",
+      "datasourceTemplate": "github-tags"
+    }
+  ]
 }

@@ -4,8 +4,10 @@
 ## Number of dirty schedulers doing IO work (file, sockets, etc)
 ##+SDio 5
 
-## Increase number of concurrent ports/sockets
-##+Q 65536
+## Cap the number of concurrent ports/sockets. Without +Q, BEAM sizes its port
+## table from the open-file limit, so a runtime with a huge nofile (about 1 billion
+## on kind) makes an idle server use gigabytes of memory.
++Q 65536
 
 ## Tweak GC to run more often
 ##-env ERL_FULLSWEEP_AFTER 10
