@@ -46,6 +46,16 @@ defmodule Schema.GeneratorTest do
   end
 
   describe "generate_object/2 for the record object" do
+    test "never repeats a locator type" do
+      record = Schema.object(nil, "record")
+
+      for _ <- 1..200 do
+        sample = Schema.generate_object(record, nil)
+        types = sample |> Map.get(:locators, []) |> Enum.map(&Map.get(&1, :type))
+        assert types == Enum.uniq(types), "duplicate locator types: #{inspect(types)}"
+      end
+    end
+
     test "produces valid, bounded skill/domain samples" do
       record = Schema.object(nil, "record")
       assert record, "record object must exist in the loaded schema"
