@@ -290,7 +290,9 @@ function init_schema_buttons() {
 
   $("#btn-validate").on("click", function (event) {
     const entityType = $(this).data("entity-type");
-    let url = "/doc/index.html#/Validation";
+    // Open the Swagger UI of the schema version this page belongs to
+    const version = window.location.pathname.match(/^\/(\d+\.\d+\.\d+[^/]*)\//);
+    let url = (version ? `/${version[1]}` : "") + "/doc#/Validation";
     if (entityType) {
       url += `/SchemaWeb.SchemaController.validate_${entityType}`;
     }
