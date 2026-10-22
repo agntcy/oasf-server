@@ -428,6 +428,10 @@ defmodule Schema.Generator do
     n = max(1, random(@max_array_size))
 
     case field[:type] do
+      "object_t" when name == :locators ->
+        # The validator rejects two locators of the same type.
+        generate_objects(n, attribute) |> Enum.uniq_by(&Map.get(&1, :type, make_ref()))
+
       "object_t" ->
         generate_objects(n, attribute)
 
