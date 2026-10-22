@@ -121,6 +121,35 @@ defmodule SchemaWeb.SchemaControllerTest do
     end
   end
 
+  describe "GET /api/version url" do
+    setup do
+      endpoint = Application.get_env(:schema_server, SchemaWeb.Endpoint)
+      on_exit(fn -> Application.put_env(:schema_server, SchemaWeb.Endpoint, endpoint) end)
+      %{endpoint: endpoint}
+    end
+
+    defp version_with_url(conn, endpoint, url) do
+      Application.put_env(:schema_server, SchemaWeb.Endpoint, Keyword.put(endpoint, :url, url))
+      json_response_body(json_get(conn, "/api/version"))
+    end
+
+    test "uses the configured scheme and leaves out its default port", %{
+      conn: conn,
+      endpoint: endpoint
+    } do
+      body =
+        version_with_url(conn, endpoint, scheme: "https", host: "oasf.example.com", port: 443)
+
+      assert body["url"] == "https://oasf.example.com"
+      assert body["api_url"] == "https://oasf.example.com/api"
+    end
+
+    test "keeps a non-default port", %{conn: conn, endpoint: endpoint} do
+      body = version_with_url(conn, endpoint, scheme: "http", host: "localhost", port: "8080")
+      assert body["url"] == "http://localhost:8080"
+    end
+  end
+
   describe "GET /api/versions" do
     test "returns 200", %{conn: conn} do
       conn = json_get(conn, "/api/versions")

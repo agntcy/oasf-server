@@ -1863,9 +1863,22 @@ defmodule SchemaWeb.SchemaController do
 
     # The :url key is meant to be set for production, but isn't set for local development
     if url == nil do
-      "#{conn.scheme}://#{conn.host}:#{conn.port}"
+      format_base_url(conn.scheme, conn.host, conn.port)
     else
-      "#{conn.scheme}://#{Keyword.fetch!(url, :host)}:#{Keyword.fetch!(url, :port)}"
+      format_base_url(
+        Keyword.get(url, :scheme, conn.scheme),
+        Keyword.fetch!(url, :host),
+        Keyword.fetch!(url, :port)
+      )
+    end
+  end
+
+  # Leaves out the port when it is the scheme's default
+  defp format_base_url(scheme, host, port) do
+    case {to_string(scheme), to_string(port)} do
+      {"http", "80"} -> "http://#{host}"
+      {"https", "443"} -> "https://#{host}"
+      {scheme, port} -> "#{scheme}://#{host}:#{port}"
     end
   end
 
