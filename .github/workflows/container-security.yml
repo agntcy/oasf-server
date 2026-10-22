@@ -22,9 +22,9 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          # Scan the image built from main, not the last release. `latest`
-          # only moves on a v* tag, so scanning it reports the state of a
-          # release rather than of the code that has since been fixed.
+          # Scan the image built from main, which is also `latest`. The image
+          # has no schema, so this one scan covers every schema version the
+          # server is deployed with.
           - image: oasf-server
             repo: ghcr.io/agntcy/oasf-server
             version: main
