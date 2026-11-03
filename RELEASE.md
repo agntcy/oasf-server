@@ -15,7 +15,7 @@ Releases are tagged on `main`; there are no release branches.
 
 1. Open a pull request that sets the version in `mix.exs` (drop the `-dev` suffix), sets `appVersion` in `install/charts/oasf/Chart.yaml` and `image.tag` in its `values.yaml` to `vX.Y.Z`, and moves the `Unreleased` entries in `CHANGELOG.md` under the new version.
 2. Once it is merged, tag the merge commit with `vX.Y.Z` and push the tag. CI builds, signs and publishes `ghcr.io/agntcy/oasf-server:vX.Y.Z`.
-3. Generate release notes on GitHub and publish the release.
+3. CI then publishes the GitHub release, with the version's `CHANGELOG.md` section as its notes. See [Release Notes](#release-notes).
 4. Open a pull request that bumps `mix.exs` to the next `-dev` version.
 
 ## API Version Bumping
@@ -24,4 +24,16 @@ The API version in `lib/schema_web/router.ex` only needs to be bumped when the A
 
 ## Releasing a New Chart Version
 
-Use tags with the prefix `helm/` followed by the chart version, for example `helm/vX.Y.Z`.
+Use tags with the prefix `helm/` followed by the chart version, for example `helm/vX.Y.Z`. CI publishes the chart as `oci://ghcr.io/agntcy/oasf-server/helm-charts/oasf` and then the GitHub release, which is never marked as the latest release.
+
+A server release sets the chart's `appVersion`, so it is usually followed by a chart release of the same version, tagged on the same commit.
+
+## Release Notes
+
+Release notes come from `CHANGELOG.md`, not from GitHub. Each released section's heading names the tags it is released under, for example:
+
+```markdown
+## [v2.1.0](https://github.com/agntcy/oasf-server/releases/tag/v2.1.0) and [helm/v2.1.0](https://github.com/agntcy/oasf-server/releases/tag/helm/v2.1.0) - 2026-11-03
+```
+
+`scripts/release-notes.sh <tag>` prints the notes for a tag: that section without its heading, with relative links pointing at the tagged files. A chart release's notes also start with the server version it deploys. CI fails a tag that has no section, before anything is built, so move the `Unreleased` entries under the new heading, and check they are complete, before tagging. `task lint` checks that every released section yields notes.
