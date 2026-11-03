@@ -13,7 +13,7 @@ This document describes how the OASF server and its Helm chart are released.
 
 Releases are tagged on `main`; there are no release branches.
 
-1. Open a pull request that sets the version in `mix.exs` (drop the `-dev` suffix) and moves the `Unreleased` entries in `CHANGELOG.md` under the new version.
+1. Open a pull request that sets the version in `mix.exs` (drop the `-dev` suffix), sets `appVersion` in `install/charts/oasf/Chart.yaml` and `image.tag` in its `values.yaml` to `vX.Y.Z`, and moves the `Unreleased` entries in `CHANGELOG.md` under the new version.
 2. Once it is merged, tag the merge commit with `vX.Y.Z` and push the tag. CI builds, signs and publishes `ghcr.io/agntcy/oasf-server:vX.Y.Z`.
 3. Generate release notes on GitHub and publish the release.
 4. Open a pull request that bumps `mix.exs` to the next `-dev` version.

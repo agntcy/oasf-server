@@ -418,6 +418,8 @@ tasks:
 
   lint:charts:
     desc: Run Helm linters
+    preconditions:
+      - which yq
     deps:
       - deps:helm
     vars:
@@ -433,6 +435,12 @@ tasks:
           for values in ci/*-values.yaml; do
             {{ .HELM_BIN }} lint . --strict -f "$values"
           done
+          app_version=$(yq -r .appVersion Chart.yaml)
+          image_tag=$(yq -r '.image.tag // ""' values.yaml)
+          if [ "$image_tag" != "$app_version" ]; then
+            echo "{{ .ITEM }}: image.tag ($image_tag) differs from appVersion ($app_version)" >&2
+            exit 1
+          fi
 
   fmt:
     desc: Run formatters
