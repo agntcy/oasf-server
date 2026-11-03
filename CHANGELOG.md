@@ -8,10 +8,19 @@ Releases up to `v1.x` shipped the server bundled with a schema from [agntcy/oasf
 
 ## Unreleased
 
+### Added
+
+- `URL_SCHEME` sets the scheme of the server's public URL, for example `https` behind a TLS-terminating ingress. `URL_PORT` then defaults to `443` ([#10](https://github.com/agntcy/oasf-server/pull/10)).
+
+### Changed
+
+- The chart's `image.tag` names the server release it deploys (`v2.0.0`) instead of being empty, so upgrading the server means changing that one value ([#11](https://github.com/agntcy/oasf-server/pull/11)).
+
 ### Fixed
 
 - Generated `record` samples no longer repeat a locator type, which the validator rejects ([#8](https://github.com/agntcy/oasf-server/pull/8)).
 - The Validate button on object and class pages opens the Swagger UI (`/doc`, or `/<version>/doc` on a versioned page) instead of the removed `/doc/index.html` ([#9](https://github.com/agntcy/oasf-server/pull/9)).
+- `/api/version` and `/api/versions` report the public URL without its scheme's default port, and no longer with port `8000` when the image listens on `8080` ([#10](https://github.com/agntcy/oasf-server/pull/10)).
 
 ## [v2.0.0](https://github.com/agntcy/oasf-server/releases/tag/v2.0.0) - 2026-10-22
 
