@@ -127,7 +127,10 @@ The schema server uses a number of environment variables.
 
 | Variable Name    | Description                                                                               |
 | ---------------- | ----------------------------------------------------------------------------------------- |
-| HTTP_PORT        | The server HTTP port number, default: `8080`                                              |
+| PORT             | The server HTTP port number, default: `8080` in the image                                 |
+| HOST             | The server's public host name, used in links and in `/api/version`, default: `localhost`  |
+| URL_SCHEME       | The public URL scheme, `https` behind a TLS-terminating proxy, default: `http`            |
+| URL_PORT         | The public port, default: `443` for `https`, else `PORT`                                  |
 | LOG_LEVEL        | Logger level (`debug`, `info`, `warning`, `error`), default: `warning`                    |
 | SCHEMA_DIR       | The directory containing the schema, default: `../oasf/schema`, or `/app/schema` in the image |
 | SCHEMA_EXTENSION | Comma-separated extension directories, relative to SCHEMA_DIR or absolute; blank for none |
