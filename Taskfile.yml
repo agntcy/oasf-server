@@ -415,6 +415,18 @@ tasks:
     desc: Run all linters
     cmds:
       - task: lint:charts
+      - task: lint:changelog
+
+  lint:changelog:
+    desc: Check that every released CHANGELOG.md section yields release notes
+    preconditions:
+      - which yq
+    cmds:
+      - |
+        set -eu
+        for tag in $(grep '^## \[' CHANGELOG.md | grep -o '\[[^]]*\]' | tr -d '[]'); do
+          scripts/release-notes.sh "$tag" > /dev/null
+        done
 
   lint:charts:
     desc: Run Helm linters

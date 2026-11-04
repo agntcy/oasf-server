@@ -106,6 +106,14 @@ jobs:
           echo "helm_release_tag=$HELM_RELEASE_TAG" >> "$GITHUB_OUTPUT"
           echo "schemas=$(jq -c '[.versions[].schema]' schema-versions.json)" >> "$GITHUB_OUTPUT"
 
+      # The release jobs publish this section as the release notes. Check it
+      # here, so a tag without one fails before the build and tests run.
+      - name: Check release notes
+        if: ${{ startsWith(github.ref, 'refs/tags/') }}
+        env:
+          TAG: ${{ github.ref_name }}
+        run: scripts/release-notes.sh "$TAG" > /dev/null
+
   build:
     name: Build
     if: ${{ !startsWith(github.ref, 'refs/tags/helm/') }}
@@ -424,6 +432,11 @@ jobs:
         with:
           fetch-depth: 0
 
+      - name: Release notes
+        env:
+          TAG: ${{ github.ref_name }}
+        run: scripts/release-notes.sh "$TAG" > "$RUNNER_TEMP/release-notes.md"
+
       - name: Setup QEMU
         uses: docker/setup-qemu-action@49b3bc8e6bdd4a60e6116a5414239cba5943d3cf # v3.2.0
 
@@ -505,16 +518,13 @@ jobs:
           subject-digest: ${{ steps.digest.outputs.digest }}
           push-to-registry: true
 
-      - name: Create Release
-        id: create_release
-        uses: actions/create-release@0cb9c9b65d5d1901c1f53e5e66eaf4afd303e70e # v1
+      - name: Publish release
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN  }}
-        with:
-          tag_name: ${{ needs.prepare.outputs.image_tag }}
-          release_name: Release ${{ needs.prepare.outputs.image_tag }}
-          draft: true
-          prerelease: false
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAG: ${{ github.ref_name }}
+        run: |
+          gh release create "$TAG" --verify-tag --latest \
+            --title "Release $TAG" --notes-file "$RUNNER_TEMP/release-notes.md"
 
   helm_release:
     name: Helm Chart Release
@@ -531,6 +541,11 @@ jobs:
         uses: actions/checkout@d632683dd7b4114ad314bca15554477dd762a938 # v4.2.0
         with:
           fetch-depth: 0
+
+      - name: Release notes
+        env:
+          TAG: ${{ github.ref_name }}
+        run: scripts/release-notes.sh "$TAG" > "$RUNNER_TEMP/release-notes.md"
 
       - name: Log in to GitHub Container Registry
         uses: docker/login-action@9780b0c442fbb1117ed29e0efdff1e18412f7567 # v3.3.0
@@ -569,16 +584,14 @@ jobs:
           echo "Pushing ${FILE} to oci://ghcr.io/agntcy/oasf-server/helm-charts"
           helm push "$FILE" oci://ghcr.io/agntcy/oasf-server/helm-charts
 
-      - name: Create Release
-        id: create_release
-        uses: actions/create-release@0cb9c9b65d5d1901c1f53e5e66eaf4afd303e70e # v1
+      # Never marked latest: that stays on the server release.
+      - name: Publish release
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN  }}
-        with:
-          tag_name: ${{ github.ref_name }}
-          release_name: Release ${{ github.ref_name }}
-          draft: true
-          prerelease: false
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAG: ${{ github.ref_name }}
+        run: |
+          gh release create "$TAG" --verify-tag --latest=false \
+            --title "Release $TAG" --notes-file "$RUNNER_TEMP/release-notes.md"
 
   success:
     name: Success

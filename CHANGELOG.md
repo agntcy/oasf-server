@@ -22,21 +22,21 @@ Releases up to `v1.x` shipped the server bundled with a schema from [agntcy/oasf
 - The Validate button on object and class pages opens the Swagger UI (`/doc`, or `/<version>/doc` on a versioned page) instead of the removed `/doc/index.html` ([#9](https://github.com/agntcy/oasf-server/pull/9)).
 - `/api/version` and `/api/versions` report the public URL without its scheme's default port, and no longer with port `8000` when the image listens on `8080` ([#10](https://github.com/agntcy/oasf-server/pull/10)).
 
-## [v2.0.0](https://github.com/agntcy/oasf-server/releases/tag/v2.0.0) - 2026-10-22
+## [v2.0.0](https://github.com/agntcy/oasf-server/releases/tag/v2.0.0) and [helm/v2.0.0](https://github.com/agntcy/oasf-server/releases/tag/helm/v2.0.0) - 2026-10-22
 
-Supported schema versions: `1.1.0` (default), `1.0.0` and `0.8.0`, from the `ghcr.io/agntcy/oasf-schema` images of the same tags. See [schema-versions.json](./schema-versions.json).
+Supported schema versions: `1.1.0` (default), `1.0.0` and `0.8.0`, from the `ghcr.io/agntcy/oasf-schema` images of the same tags. See [schema-versions.json](./schema-versions.json). CI tests the server against each of them ([#3](https://github.com/agntcy/oasf-server/pull/3), merged as part of [#2](https://github.com/agntcy/oasf-server/pull/2)).
 
 ### Changed
 
-- **BREAKING:** the server image no longer contains a schema. Mount one at `SCHEMA_DIR` (`/app/schema` in the image), from a host directory or an `oasf-schema` image.
-- **BREAKING:** the server refuses to start, with a clear error and a non-zero exit status, when `SCHEMA_DIR` has no `version.json`.
-- The server is versioned independently of the schema, starting at `2.0.0`.
-- **BREAKING:** Helm chart v2. `image.versions` is replaced by `schema.versions`: one server image (`image.tag`, defaulting to the chart's `appVersion`) serves every version, each mounted from the `oasf-schema` image tagged with its schema version (or `tag`), optionally pinned by digest. `schema.mount` picks an init container (default) or an image volume (Kubernetes 1.35+). Resource names and ingress paths are unchanged. Rendering fails without versions, on duplicates or with more than one default.
-- The chart runs the server as non-root with a read-only root filesystem by default.
-- The chart is published as `oci://ghcr.io/agntcy/oasf-server/helm-charts/oasf`.
+- **BREAKING:** the server image no longer contains a schema. Mount one at `SCHEMA_DIR` (`/app/schema` in the image), from a host directory or an `oasf-schema` image ([#1](https://github.com/agntcy/oasf-server/pull/1)).
+- **BREAKING:** the server refuses to start, with a clear error and a non-zero exit status, when `SCHEMA_DIR` has no `version.json` ([#1](https://github.com/agntcy/oasf-server/pull/1)).
+- The server is versioned independently of the schema, starting at `2.0.0` ([#1](https://github.com/agntcy/oasf-server/pull/1)).
+- **BREAKING:** Helm chart v2. `image.versions` is replaced by `schema.versions`: one server image (`image.tag`, defaulting to the chart's `appVersion`) serves every version, each mounted from the `oasf-schema` image tagged with its schema version (or `tag`), optionally pinned by digest. `schema.mount` picks an init container (default) or an image volume (Kubernetes 1.35+). Resource names and ingress paths are unchanged. Rendering fails without versions, on duplicates or with more than one default ([#4](https://github.com/agntcy/oasf-server/pull/4)).
+- The chart runs the server as non-root with a read-only root filesystem by default ([#4](https://github.com/agntcy/oasf-server/pull/4)).
+- The chart is published as `oci://ghcr.io/agntcy/oasf-server/helm-charts/oasf` ([#4](https://github.com/agntcy/oasf-server/pull/4)).
 
 ### Fixed
 
-- The chart's HPA ignored `targetCPUUtilizationPercentage` and `targetMemoryUtilizationPercentage` because of a typo in the template.
-- Cap the BEAM port table at 65536 with `+Q`, so the server's memory no longer grows with the runtime's open-file limit.
-- Image cleanup could delete release, `main` and `latest` images, or the platform manifests behind them.
+- The chart's HPA ignored `targetCPUUtilizationPercentage` and `targetMemoryUtilizationPercentage` because of a typo in the template ([#4](https://github.com/agntcy/oasf-server/pull/4)).
+- Cap the BEAM port table at 65536 with `+Q`, so the server's memory no longer grows with the runtime's open-file limit ([#2](https://github.com/agntcy/oasf-server/pull/2)).
+- Image cleanup could delete release, `main` and `latest` images, or the platform manifests behind them ([#5](https://github.com/agntcy/oasf-server/pull/5), merged as part of [#4](https://github.com/agntcy/oasf-server/pull/4)).
