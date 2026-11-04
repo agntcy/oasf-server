@@ -2,6 +2,8 @@
 
 The schema server is an HTTP server that provides a convenient way to browse and
 use the OASF schema.
+It moved here from [agntcy/oasf](https://github.com/agntcy/oasf) in `v2.0.0`, and no
+longer bundles a schema; see the [announcement](https://github.com/agntcy/oasf/discussions/560) for what changed.
 
 ## Local Usage
 
