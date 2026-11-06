@@ -524,7 +524,7 @@ jobs:
           TAG: ${{ github.ref_name }}
         run: |
           gh release create "$TAG" --verify-tag --latest \
-            --title "Release $TAG" --notes-file "$RUNNER_TEMP/release-notes.md"
+            --title "Server $TAG" --notes-file "$RUNNER_TEMP/release-notes.md"
 
   helm_release:
     name: Helm Chart Release
@@ -591,7 +591,7 @@ jobs:
           TAG: ${{ github.ref_name }}
         run: |
           gh release create "$TAG" --verify-tag --latest=false \
-            --title "Release $TAG" --notes-file "$RUNNER_TEMP/release-notes.md"
+            --title "Helm chart ${TAG#helm/}" --notes-file "$RUNNER_TEMP/release-notes.md"
 
   success:
     name: Success
