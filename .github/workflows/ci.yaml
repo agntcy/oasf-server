@@ -204,7 +204,7 @@ jobs:
           task test:image
 
       - name: Set up Elixir
-        uses: erlef/setup-beam@8251c48667b97e88a0a24ec512f5b72a039fcea7 # v1
+        uses: erlef/setup-beam@54075bcc5e249e4758d363f27d099f55d843f124 # v1.24.1
         with:
           elixir-version: "1.19"
           otp-version: "28"
