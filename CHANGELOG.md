@@ -24,8 +24,8 @@ Releases up to `v1.x` shipped the server bundled with a schema from [agntcy/oasf
 
 ### Security
 
-- The image is built on Alpine `3.23.8`, which ships OpenSSL `3.5.9-r1` with fixes for CVE-2026-95691, CVE-2026-95692, CVE-2026-107496, CVE-2026-88822 and CVE-2026-88823.
-- The HTML pages send a `Content-Security-Policy` header.
+- The image is built on Alpine `3.23.8`, which ships OpenSSL `3.5.9-r1` with fixes for CVE-2026-95691, CVE-2026-95692, CVE-2026-107496, CVE-2026-88822 and CVE-2026-88823 ([#18](https://github.com/agntcy/oasf-server/pull/18)).
+- The HTML pages send a `Content-Security-Policy` header ([#18](https://github.com/agntcy/oasf-server/pull/18)).
 
 ## [v2.0.0](https://github.com/agntcy/oasf-server/releases/tag/v2.0.0) and [helm/v2.0.0](https://github.com/agntcy/oasf-server/releases/tag/helm/v2.0.0) - 2026-10-22
 
