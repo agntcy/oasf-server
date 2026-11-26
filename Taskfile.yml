@@ -25,12 +25,17 @@ vars:
 
   ## Dependency config
   BIN_DIR: '{{ .ROOT_DIR }}/bin'
+  # renovate: datasource=github-releases depName=helm/helm extractVersion=^v(?<version>.+)$
   HELM_VERSION: '3.16.3'
   HELM_BIN: '{{ .BIN_DIR }}/helm-{{.HELM_VERSION}}'
+  # renovate: datasource=github-releases depName=kubernetes/kubernetes extractVersion=^v(?<version>.+)$
   KUBECTL_VERSION: '1.35.8'
   KUBECTL_BIN: '{{ .BIN_DIR }}/kubectl-{{.KUBECTL_VERSION}}'
+  # renovate: datasource=github-releases depName=kubernetes-sigs/kind extractVersion=^v(?<version>.+)$
   KIND_VERSION: '0.33.0'
   KIND_BIN: '{{ .BIN_DIR }}/kind-{{.KIND_VERSION}}'
+  # renovate: datasource=npm depName=renovate
+  RENOVATE_VERSION: '44.252.7'
 
 ## Set refresh interval for observable tasks like hot-reload
 interval: 500ms
@@ -82,6 +87,7 @@ tasks:
       KIND_CLUSTER_NAME: '{{ .KIND_CLUSTER_NAME | default "test-oasf-cluster" }}'
       KIND_CREATE_OPTS: '{{ .KIND_CREATE_OPTS | default "" }}'
       KIND_CONFIG_PATH: '/tmp/{{.KIND_CLUSTER_NAME}}'
+      # renovate: datasource=docker depName=kindest/node
       KIND_NODE_IMAGE: '{{ .KIND_NODE_IMAGE | default "kindest/node:v1.35.8@sha256:07b2536e30b803ed61d1677a79df6115f798ce64c80f9e22f6ed45afd09323c0" }}'
       # Deployment args
       HELM_NAMESPACE: '{{ .HELM_NAMESPACE | default "default" }}'
@@ -231,6 +237,7 @@ tasks:
     preconditions:
       - which docker
     vars:
+      # renovate: datasource=docker depName=helmunittest/helm-unittest
       HELM_UNITTEST_IMAGE: 'helmunittest/helm-unittest:3.19.0-1.0.3@sha256:4684b7cf1e1a20ce3ff2cbfcceda36566d862d6024fa23684955d10ef6d51ab1'
     cmds:
       # Run as the current user, so the plugin can write to the checkout.
@@ -530,3 +537,30 @@ tasks:
       - cmd: mv {{.BIN_DIR}}/kind {{.KIND_BIN}}
     status:
       - test -x {{.KIND_BIN}}
+
+  deps:renovate:
+    desc: Ensure supported Renovate version is installed
+    internal: true
+    preconditions:
+      - which npm
+    cmd: npm install -g renovate@{{.RENOVATE_VERSION}}
+    status:
+      - npm list -g renovate@{{.RENOVATE_VERSION}}
+
+  deps:renovate:sync:
+    desc: Sync dependencies with Renovate
+    summary: |
+      For extra CLI flags pass RENOVATE_OPTS (e.g. task deps:renovate:sync RENOVATE_OPTS='--dry-run=lookup').
+      Default platform is local so local runs do not touch remote project data.
+      The Dependencies workflow sets RENOVATE_PLATFORM to github.
+      Without a GitHub token this step only reports updates and does not open PRs.
+    deps:
+      - deps:renovate
+    dir: '{{.ROOT_DIR}}'
+    vars:
+      RENOVATE_OPTS_DEFAULT: "--persist-repo-data 'true'"
+      RENOVATE_OPTS: '{{ .RENOVATE_OPTS | default .RENOVATE_OPTS_DEFAULT }}'
+      RENOVATE_PLATFORM_EFFECTIVE:
+        sh: printf '%s' "${RENOVATE_PLATFORM:-local}"
+    cmds:
+      - renovate {{.RENOVATE_OPTS}} --platform "{{.RENOVATE_PLATFORM_EFFECTIVE}}"

@@ -1,92 +1,210 @@
 {
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
   "extends": [
-    "config:recommended"
+    "config:recommended",
+    "helpers:pinGitHubActionDigestsToSemver",
+    ":semanticCommitTypeAll(chore)",
+    ":dependencyDashboard"
   ],
-  "enabledManagers": [
-    "dockerfile",
-    "github-actions",
-    "mix",
-    "gomod",
-    "custom.regex"
-  ],
-  "packageRules": [
-    {
-      "description": "Supported schema versions only move within their line; adding a line is a manual change",
-      "matchFileNames": [
-        "schema-versions.json"
-      ],
-      "matchUpdateTypes": [
-        "major",
-        "minor"
-      ],
-      "enabled": false
-    },
-    {
-      "matchManagers": [
-        "mix"
-      ],
-      "matchUpdateTypes": [
-        "patch"
-      ],
-      "automerge": true
-    },
-    {
-      "matchManagers": [
-        "gomod"
-      ],
-      "matchUpdateTypes": [
-        "patch"
-      ],
-      "automerge": true
-    },
-    {
-      "matchManagers": [
-        "github-actions"
-      ],
-      "matchUpdateTypes": [
-        "minor",
-        "patch"
-      ],
-      "automerge": true
-    },
-    {
-      "matchManagers": [
-        "dockerfile"
-      ],
-      "matchUpdateTypes": [
-        "minor",
-        "patch"
-      ],
-      "automerge": true
-    },
-    {
-      "matchCategories": [
-        "vulnerability"
-      ],
-      "enabled": true,
-      "automerge": true,
-      "addLabels": [
-        "security"
-      ]
-    }
-  ],
-  "semanticCommits": "enabled",
-  "labels": [
-    "dependencies"
-  ],
+  "configMigration": true,
   "customManagers": [
     {
       "customType": "regex",
-      "description": "Bump each supported schema line to its latest agntcy/oasf patch tag",
-      "managerFilePatterns": [
-        "/^schema-versions\\.json$/"
-      ],
-      "matchStrings": [
-        "\"ref\": \"(?<currentValue>v\\d+\\.\\d+\\.\\d+)\""
-      ],
+      "managerFilePatterns": ["/^schema-versions\\.json$/"],
+      "matchStrings": ["\"ref\": \"(?<currentValue>v\\d+\\.\\d+\\.\\d+)\""],
       "depNameTemplate": "agntcy/oasf",
-      "datasourceTemplate": "github-tags"
+      "datasourceTemplate": "github-tags",
+      "description": [
+        "agntcy/oasf release tag each supported schema version is tested from."
+      ]
+    },
+    {
+      "customType": "regex",
+      "managerFilePatterns": ["/(^|/)Taskfile[^/]*\\.ya?ml$/"],
+      "matchStrings": [
+        "#[^\\S\\r\\n]*renovate:[^\\S\\r\\n]*datasource=(?<datasource>\\S+)[^\\S\\r\\n]+depName=(?<depName>\\S+)(?:[^\\S\\r\\n]+versioning=(?<versioning>\\S+))?(?:[^\\S\\r\\n]+extractVersion=(?<extractVersion>\\S+))?(?:[^\\S\\r\\n]+registryUrl=(?<registryUrl>\\S+))?[^\\S\\r\\n]*\\r?\\n[^\\S\\r\\n]*[A-Z0-9_]+_VERSION:[^\\S\\r\\n]+['\"]?(?<currentValue>[^'\"@\\s]+)['\"]?"
+      ],
+      "description": [
+        "Tool versions pinned in Taskfile.yml with an inline renovate comment (helm, kubectl, kind, renovate)."
+      ]
+    },
+    {
+      "customType": "regex",
+      "managerFilePatterns": ["/(^|/)Taskfile[^/]*\\.ya?ml$/"],
+      "matchStrings": [
+        "#[^\\S\\r\\n]*renovate:[^\\S\\r\\n]*datasource=(?<datasource>docker)[^\\S\\r\\n]+depName=(?<depName>\\S+)(?:[^\\S\\r\\n]+versioning=(?<versioning>\\S+))?[^\\S\\r\\n]*\\r?\\n[^\\r\\n]*?:(?<currentValue>[^:@\\s'\"]+)@(?<currentDigest>sha256:[a-f0-9]{64})"
+      ],
+      "description": [
+        "Container images pinned as tag@digest in Taskfile.yml with an inline renovate comment (kindest/node, helm-unittest)."
+      ]
+    },
+    {
+      "customType": "regex",
+      "managerFilePatterns": ["/^install/charts/[^/]+/templates/.+\\.ya?ml$/"],
+      "matchStrings": [
+        "#[^\\S\\r\\n]*renovate:[^\\S\\r\\n]*datasource=(?<datasource>docker)[^\\S\\r\\n]+depName=(?<depName>\\S+)[^\\S\\r\\n]*\\r?\\n[^\\S\\r\\n]*image:[^\\S\\r\\n]*['\"]?[^:\\s'\"]+:(?<currentValue>[^@\\s'\"]+)(?:@(?<currentDigest>sha256:[a-f0-9]{64}))?['\"]?"
+      ],
+      "description": [
+        "Third-party images hardcoded in the chart templates with an inline renovate comment (ingress-nginx controller)."
+      ]
     }
-  ]
+  ],
+  "dependencyDashboard": {
+    "autoclose": true,
+    "header": "",
+    "labels": ["dependencies"],
+    "osvVulnerabilitySummary": "all"
+  },
+  "enabled": true,
+  "minimumReleaseAge": "7 days",
+  "schedule": ["before 8am on Monday"],
+  "enabledManagers": [
+    "custom.regex",
+    "dockerfile",
+    "github-actions",
+    "mix",
+    "npm"
+  ],
+  "labels": ["dependencies"],
+  "osvVulnerabilityAlerts": true,
+  "lockFileMaintenance": {
+    "enabled": true
+  },
+  "packageRules": [
+    {
+      "matchUpdateTypes": ["major"],
+      "dependencyDashboardApproval": true,
+      "description": [
+        "Open major updates only when approved on the Dependency Dashboard."
+      ]
+    },
+    {
+      "matchManagers": ["mix"],
+      "addLabels": ["elixir"],
+      "description": ["Add elixir label to PRs which bump Hex dependencies."]
+    },
+    {
+      "groupName": "Elixir patches",
+      "groupSlug": "elixir-patches",
+      "matchManagers": ["mix"],
+      "matchUpdateTypes": ["patch"],
+      "description": ["Group Hex dependency patch updates in a single PR."]
+    },
+    {
+      "groupName": "Phoenix",
+      "groupSlug": "phoenix",
+      "matchManagers": ["mix"],
+      "matchPackageNames": ["phoenix", "phoenix_*", "plug", "plug_*"],
+      "description": [
+        "Move Phoenix and Plug packages together; they are released and tested against each other."
+      ]
+    },
+    {
+      "groupName": "Taskfile",
+      "groupSlug": "taskfile",
+      "matchFileNames": ["Taskfile.*"],
+      "addLabels": ["build"],
+      "description": [
+        "Add build label to PRs which bump build tools defined in Taskfile.",
+        "Group Taskfile dependency updates in a single PR."
+      ]
+    },
+    {
+      "groupName": "Github Actions",
+      "groupSlug": "github-actions",
+      "matchDatasources": ["github-tags"],
+      "addLabels": ["ci"],
+      "description": [
+        "Add ci label to PRs which are related to Github Actions.",
+        "Group CI dependency updates in a single PR."
+      ]
+    },
+    {
+      "groupName": "Elixir toolchain",
+      "groupSlug": "elixir-toolchain",
+      "matchDepNames": ["elixir", "elixir-lang/elixir", "erlang/otp"],
+      "addLabels": ["elixir"],
+      "description": [
+        "Move the Elixir builder image and the Elixir and OTP versions of the workflows together,",
+        "so CI tests the toolchain the image is built with."
+      ]
+    },
+    {
+      "groupName": "Helm",
+      "groupSlug": "helm",
+      "matchPackageNames": ["helm/helm", "helmunittest/helm-unittest"],
+      "addLabels": ["helm"],
+      "description": [
+        "Move the Helm CLI of Taskfile and the release job, and the helm-unittest image, together."
+      ]
+    },
+    {
+      "groupName": "Kubernetes tools",
+      "groupSlug": "kubernetes-tools",
+      "matchPackageNames": [
+        "kubernetes/kubernetes",
+        "kubernetes-sigs/kind",
+        "kindest/node"
+      ],
+      "description": [
+        "Move kind, its node image and kubectl together: each kind release supports a fixed set of node images."
+      ]
+    },
+    {
+      "matchPackageNames": ["registry.k8s.io/ingress-nginx/controller"],
+      "addLabels": ["helm"],
+      "description": ["Add helm label to PRs which bump images deployed by the chart."]
+    },
+    {
+      "groupName": "Security scan scripts",
+      "groupSlug": "security-scan-scripts",
+      "matchManagers": ["npm"],
+      "addLabels": ["ci"],
+      "description": [
+        "Group updates of the Container Security Scan helper scripts in a single PR."
+      ]
+    },
+    {
+      "groupName": "OASF schema versions",
+      "groupSlug": "oasf-schema-versions",
+      "matchFileNames": ["schema-versions.json"],
+      "minimumReleaseAge": null,
+      "schedule": ["at any time"],
+      "description": [
+        "Test each supported schema line against its latest agntcy/oasf patch tag as soon as it is released.",
+        "CI runs the server against every supported version, so a schema the server cannot load fails the PR."
+      ]
+    },
+    {
+      "matchFileNames": ["schema-versions.json"],
+      "matchUpdateTypes": ["major", "minor"],
+      "enabled": false,
+      "description": [
+        "Supported schema versions only move within their line; adding a line is a manual change."
+      ]
+    },
+    {
+      "matchJsonata": [
+        "$exists(vulnerabilityFixVersion) or isVulnerabilityAlert = true"
+      ],
+      "enabled": true,
+      "dependencyDashboardApproval": false,
+      "description": [
+        "Always allow vulnerability/security fixes, even when other rules gate majors or specific dependencies."
+      ]
+    }
+  ],
+  "prConcurrentLimit": 5,
+  "prHourlyLimit": 5,
+  "printConfig": false,
+  "rebaseWhen": "behind-base-branch",
+  "reviewersFromCodeOwners": true,
+  "semanticCommits": "enabled",
+  "timezone": "Etc/UTC",
+  "vulnerabilityAlerts": {
+    "enabled": true,
+    "labels": ["security"],
+    "minimumReleaseAge": null,
+    "schedule": ["at any time"]
+  }
 }

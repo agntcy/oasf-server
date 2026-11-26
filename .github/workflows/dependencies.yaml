@@ -1,0 +1,66 @@
+# Copyright AGNTCY Contributors (https://github.com/agntcy)
+# SPDX-License-Identifier: Apache-2.0
+
+# Runs self-hosted Renovate against this repository with the project GitHub App,
+# using the config in renovate.json. The Renovate version is pinned in Taskfile.yml.
+name: Dependencies
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "0 */6 * * *"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}
+  cancel-in-progress: false
+
+jobs:
+  renovate:
+    name: Renovate Sync
+    runs-on: ubuntu-latest
+    steps:
+      - name: Authenticate with GitHub App Bot
+        id: app-token
+        uses: actions/create-github-app-token@64ab729a6294000f5aa4a4bc0b73d1f32bc45510 # v3.3.0
+        with:
+          client-id: ${{ secrets.PROJECT_APP_ID }}
+          private-key: ${{ secrets.PROJECT_APP_KEY }}
+
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          token: ${{ steps.app-token.outputs.token }}
+          ref: ${{ github.head_ref }}
+          # Do not keep the token in the local git config.
+          persist-credentials: false
+
+      - name: Install Task
+        uses: go-task/setup-task@a00fbb05ce67b35648be3c78cbc9fd85354c757e # v2.2.0
+
+      # Renovate runs mix to update mix.lock.
+      - name: Set up Elixir
+        uses: erlef/setup-beam@54075bcc5e249e4758d363f27d099f55d843f124 # v1.24.1
+        with:
+          elixir-version: "1.19"
+          otp-version: "28"
+
+      # Renovate runs on Node, and npm to update the security scripts' package-lock.json.
+      - name: Set up Node
+        uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6.5.0
+        with:
+          node-version: "24.x"
+
+      - name: Run Renovate
+        run: task deps:renovate:sync
+        env:
+          RENOVATE_AUTODISCOVER: "true"
+          RENOVATE_AUTODISCOVER_FILTER: "${{ github.repository }}"
+          RENOVATE_PLATFORM: "github"
+          RENOVATE_PLATFORM_COMMIT: "enabled"
+          RENOVATE_TOKEN: ${{ steps.app-token.outputs.token }}
+          GITHUB_COM_TOKEN: ${{ steps.app-token.outputs.token }}
+          # Keep PR descriptions to the update table, notes and changelogs.
+          RENOVATE_PR_BODY_TEMPLATE: "{{{header}}}{{{table}}}{{{warnings}}}{{{notes}}}{{{changelogs}}}"

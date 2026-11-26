@@ -24,6 +24,7 @@ spec:
       serviceAccountName: ingress-controller
       containers:
         - name: nginx-ingress-controller
+          # renovate: datasource=docker depName=registry.k8s.io/ingress-nginx/controller
           image: registry.k8s.io/ingress-nginx/controller:v1.12.2
           args:
             - /nginx-ingress-controller
