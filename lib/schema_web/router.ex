@@ -4,12 +4,33 @@
 defmodule SchemaWeb.Router do
   use SchemaWeb, :router
 
+  # The pages rely on inline <script> blocks and on* handlers, so scripts and
+  # styles allow 'unsafe-inline'. The policy still limits where scripts, styles
+  # and connections can come from, and blocks plugins, framing and <base>
+  # hijacking. Google Analytics, loaded only after cookie consent, needs the
+  # googletagmanager.com and google-analytics.com origins.
+  @content_security_policy Enum.join(
+                             [
+                               "default-src 'self'",
+                               "script-src 'self' 'unsafe-inline' https://www.googletagmanager.com",
+                               "style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net",
+                               "img-src 'self' data: https://www.googletagmanager.com https://*.google-analytics.com",
+                               "font-src 'self' data:",
+                               "connect-src 'self' https://*.google-analytics.com https://*.analytics.google.com https://www.googletagmanager.com",
+                               "object-src 'none'",
+                               "base-uri 'self'",
+                               "form-action 'self'",
+                               "frame-ancestors 'self'"
+                             ],
+                             "; "
+                           )
+
   pipeline :browser do
     plug :accepts, ["html"]
     plug :fetch_session
     plug :fetch_flash
     plug :protect_from_forgery
-    plug :put_secure_browser_headers
+    plug :put_secure_browser_headers, %{"content-security-policy" => @content_security_policy}
   end
 
   pipeline :api do

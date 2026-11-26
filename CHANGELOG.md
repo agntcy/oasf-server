@@ -22,6 +22,11 @@ Releases up to `v1.x` shipped the server bundled with a schema from [agntcy/oasf
 - The Validate button on object and class pages opens the Swagger UI (`/doc`, or `/<version>/doc` on a versioned page) instead of the removed `/doc/index.html` ([#9](https://github.com/agntcy/oasf-server/pull/9)).
 - `/api/version` and `/api/versions` report the public URL without its scheme's default port, and no longer with port `8000` when the image listens on `8080` ([#10](https://github.com/agntcy/oasf-server/pull/10)).
 
+### Security
+
+- The image is built on Alpine `3.23.8`, which ships OpenSSL `3.5.9-r1` with fixes for CVE-2026-95691, CVE-2026-95692, CVE-2026-107496, CVE-2026-88822 and CVE-2026-88823 ([#18](https://github.com/agntcy/oasf-server/pull/18)).
+- The HTML pages send a `Content-Security-Policy` header ([#18](https://github.com/agntcy/oasf-server/pull/18)).
+
 ## [v2.0.0](https://github.com/agntcy/oasf-server/releases/tag/v2.0.0) and [helm/v2.0.0](https://github.com/agntcy/oasf-server/releases/tag/helm/v2.0.0) - 2026-10-22
 
 Supported schema versions: `1.1.0` (default), `1.0.0` and `0.8.0`, from the `ghcr.io/agntcy/oasf-schema` images of the same tags. See [schema-versions.json](./schema-versions.json). CI tests the server against each of them ([#3](https://github.com/agntcy/oasf-server/pull/3), merged as part of [#2](https://github.com/agntcy/oasf-server/pull/2)).
