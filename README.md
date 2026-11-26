@@ -194,20 +194,3 @@ See [`values.yaml`](./install/charts/oasf/values.yaml) for every option. Locally
 `task up` deploys the chart to a kind cluster and serves `SCHEMA_DIR` from the node,
 so `task reload` picks up schema changes. `task test:e2e` deploys every supported
 version and checks them, and `task test:charts` runs the chart unit tests.
-
-### Dependency Updates
-
-[Renovate](https://docs.renovatebot.com/) keeps the Hex dependencies, the base images, GitHub
-Actions, the tools and images pinned in `Taskfile.yml`, the ingress controller image and the
-`ref` of each supported schema version up to date. The `Dependencies` workflow runs it with the
-config in [`renovate.json`](./renovate.json). The Dependency Dashboard issue lists pending
-updates, and major updates open only once ticked there. To see what Renovate would update,
-without touching GitHub:
-
-```shell
-task deps:renovate:sync RENOVATE_OPTS='--dry-run=lookup'
-```
-
-To let Renovate update a version pinned in `Taskfile.yml`, put a
-`# renovate: datasource=<datasource> depName=<name>` comment on the line above the
-`<NAME>_VERSION` variable, or above the variable holding a `<image>:<tag>@sha256:<digest>`.
